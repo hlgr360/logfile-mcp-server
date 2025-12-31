@@ -8,6 +8,26 @@ This file provides comprehensive guidance to AI coding assistants (Claude Code, 
 - `docs/SPEC.md` - Complete technical specification, system architecture, database schemas, and API design
 - `docs/adr/` - Architectural Decision Records for all design decisions and project context
 
+## Best Practices Integration
+
+This project follows universal best practices documented in `docs/best-practices/`. These are Tier 1 (universal) conventions that can be applied to any project. AGENTS.md provides Tier 2 (project-specific) implementation details.
+
+**Tier 1: Universal Best Practices** (copy to other projects):
+- [PYTHON.md](docs/best-practices/PYTHON.md) - Type hints, Pydantic, UV, generators, context managers
+- [DEVELOPMENT.md](docs/best-practices/DEVELOPMENT.md) - Git workflow, zero warnings, ADR lifecycle
+- [TESTING.md](docs/best-practices/TESTING.md) - Multi-layered testing strategy, coverage philosophy
+- [SECURITY.md](docs/best-practices/SECURITY.md) - SQL injection, path validation, archive safety
+- [LOGGING.md](docs/best-practices/LOGGING.md) - Semantic log levels, stderr routing, test suppression
+- [DOCUMENTATION.md](docs/best-practices/DOCUMENTATION.md) - Two-tier documentation architecture
+
+**Tier 2: Project-Specific Implementation** (this document):
+- How we apply Python standards to logfile-mcp-server
+- FastAPI and SQLAlchemy patterns specific to this project
+- MCP server implementation details
+- Log analysis domain-specific patterns
+
+**Reading Strategy**: Review applicable Tier 1 best practices first, then use this document for project-specific implementation details.
+
 ## Project Overview
 
 This is a Python FastAPI application for loading, parsing, correlating, and analyzing access logs from Nexus Repository and nginx reverse proxy. The application provides both a web interface and MCP (Model Context Protocol) server for LLM integration.
@@ -963,7 +983,6 @@ docs/
 
 README.md                   # Project overview and setup instructions
 AGENTS.md                   # This file - AI assistant instructions
-history.txt                 # Pure log of user requirements and changes
 ```
 
 ### Architectural Decision Records (ADRs)
@@ -1015,13 +1034,6 @@ history.txt                 # Pure log of user requirements and changes
 - Ensure no untracked files remain that should be committed
 - Verify all tests pass before opening PR
 
-### History Tracking
-
-- **ONLY** add user prompts and instructions to `history.txt`
-- **DO NOT** add implementation notes, summaries, or test results
-- Keep `history.txt` as pure log of user requirements
-- Format: `[Date] User Request: [actual user instruction]`
-
 ---
 
 ## Common Pitfalls to Avoid
@@ -1034,8 +1046,7 @@ history.txt                 # Pure log of user requirements and changes
 6. **Don't modify ADRs** - Create new ones for architectural changes
 7. **Don't forget "AI:" prefix** - All docstrings must include this prefix
 8. **Don't use pip directly** - Always use `uv` for dependency management
-9. **Don't add to history.txt** - Only user prompts go there, not implementation notes
-10. **Don't ignore warnings** - All pytest runs must be warning-free
+9. **Don't ignore warnings** - All pytest runs must be warning-free
 
 ---
 
