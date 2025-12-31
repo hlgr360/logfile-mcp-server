@@ -1,0 +1,18 @@
+{
+	"servers": {
+		"logminer": {
+			"command": "uv",
+			"args": [
+				"run",
+				"logminer",
+				"--db-name",
+				"log_analysis.db",
+				"--mcp-stdio"
+			],
+			"env": {
+				"PYTHONPATH": "."
+			}
+		}
+	},
+	"inputs": []
+}

@@ -1,0 +1,39 @@
+Log Analysis Application - Development History
+
+[2025-01-28] User Request: please analyze both the coding guideline and the application specification
+[2025-01-28] User Request: how to connect this repo to git@ssh.dev.azure.com:v3/IngentisDev/holger.reinhardt/logminer
+[2025-01-28] User Request: Continue: Continue to iterate?
+[2025-01-28] User Request: are you using uv for managing the virtual python env
+[2025-01-28] User Request: yes, please switch to uv and add this decision as new adr
+[2025-07-28] User Request: is the chunk size in bytes or in lines
+[2025-07-28] User Request: I think the parsing of log files should be also in lines since otherwise we end up with potentially incomplete log messages. Please change chunk size number of lines for parsing of log files
+[2025-07-28] User Request: Please record this decison in an adr
+[2025-07-28] User Request: can you formulate the prevention recommendations in an adr and add it to instructions. Then please fix the issue and add the appropriate number of the integration tests to make sure it works
+[2025-07-30] User Request: add those testcases for malformed requests to the test data and update the tests such that we can validate that the parsing of malformed requests is tested
+[2025-07-30] User Request: please clean up and commit the updated testst
+[2025-07-28] User Request: I am not yet happy with the added instructions to the copilot-instructions.md and the adr record. In the past we have added the adr to .github/instructions - what do you recommend from best practices .. moving them to docs/adr?
+[2025-07-28] User Request: I would like to follow industry best practices and would like to move my existing ones from instructions to docs/adr. Please change the naming of your ADR to match mine. Please update the copilot-instructions.md and all other references point to the right directory. Remove the instructions directory.
+[2025-07-28] User Request: please also change the file prefix from adr_ to ADR_
+[2025-07-28] User Request: please rerun all tests to make sure everything works
+[2025-07-31] User Request: lets start with phase 4
+[2025-07-31] User Request: lets continue
+[2025-07-31] User Request: but will we always have http version data even for malformed requests
+[2025-07-31] User Request: Please keep in mind that only select queries should be allowed
+[2025-07-31] User Request: please commit as pr
+[2025-07-31] User Request: looking at the playwright e2e tests and the test_mcp_e2e.py tests, it feels like we should consolidate the database setup... Can you please evaluate if it is possible to share the database with dummy data for both
+[2025-07-31] User Request: uv run pytest -n auto fails with ModuleNotFoundError: No module named 'pytest_xdist'
+[2025-07-31] User Request: why did you move mcp to optional-dependencies instead of keeping it in dependencies
+[2025-07-31] User Request: AttributeError: 'LogAnalysisMCPServer' object has no attribute '_format_json_response' - several test_mcp_server.py methods fail with this error
+[2025-07-31] User Request: please commit and push
+[2025-01-31] User Request: Rename project from loganalaizer to logminer
+[2025-02-02] User Request: Review and improve processor code to reduce repetition while maintaining robustness
+[2025-02-02] User Request: I would like to add support for the archive '.tar' to it
+[2025-02-02] User Request: lets look at the processors .. is there a way to improve the code such that there is no repetition or is the implementation lean enough without becoming brittle
+[2025-02-02] User Request: can you please address the tests/unit/test_base_processor.py::TestBaseLogProcessorEdgeCases::test_empty_lines_handling PASSED [100%]<unknown>:1: DeprecationWarning: invalid escape sequence '\o'
+[2025-02-02] User Request: please commit
+[2025-08-02] User Request: Change the architecture so that there is a base database class and two implementation classes, one for nexus and one for nginx
+[2025-08-02] User Request: will the mcp interface continue to work as it did before and provide all the necessary information to the mcp server?
+[2025-08-02] User Request: lets cleanup and commit the changes
+[2025-08-03] User Request: please check the tests if they conform
+[2025-08-03] User Request: Continue: "Continue to iterate?"
+[2025-08-03] User Request: lets commit

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log Analysis Application</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Log Analysis Application</h1>
+            <p>Nexus and nginx log correlation and analysis</p>
+        </header>
+
+        <nav>
+            <ul>
+                <li><a href="#table-previews">Table Previews</a></li>
+                <li><a href="#query-section">SQL Query</a></li>
+                <li><a href="#schema-info">Database Schema</a></li>
+            </ul>
+        </nav>
+
+        <main>
+            <!-- Table Previews Section -->
+            <section id="table-previews">
+                <h2>Log Table Previews</h2>
+                
+                <div class="preview-container">
+                    <div id="nginx-preview-section" class="preview-box">
+                        <h3>nginx Access Logs</h3>
+                        <div class="table-controls">
+                            <button id="refresh-nginx" class="btn-secondary">Refresh</button>
+                            <span id="nginx-status" class="status-text">Loading...</span>
+                        </div>
+                        <div class="table-wrapper">
+                            <table id="nginx-table" class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>IP Address</th>
+                                        <th>Timestamp</th>
+                                        <th>Method</th>
+                                        <th>Path</th>
+                                        <th>Status</th>
+                                        <th>Size</th>
+                                        <th>User Agent</th>
+                                        <th>Source</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="nginx-table-body">
+                                    <!-- Data loaded via JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="nexus-preview-section" class="preview-box">
+                        <h3>Nexus Repository Logs</h3>
+                        <div class="table-controls">
+                            <button id="refresh-nexus" class="btn-secondary">Refresh</button>
+                            <span id="nexus-status" class="status-text">Loading...</span>
+                        </div>
+                        <div class="table-wrapper">
+                            <table id="nexus-table" class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>IP Address</th>
+                                        <th>Timestamp</th>
+                                        <th>Method</th>
+                                        <th>Path</th>
+                                        <th>Status</th>
+                                        <th>Size 1</th>
+                                        <th>Size 2</th>
+                                        <th>Thread</th>
+                                        <th>Source</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="nexus-table-body">
+                                    <!-- Data loaded via JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SQL Query Section -->
+            <section id="query-section">
+                <h2>SQL Query Interface</h2>
+                <div class="query-container">
+                    <div class="query-input-section">
+                        <label for="sql-query">SQL Query (SELECT statements only):</label>
+                        <textarea 
+                            id="sql-query" 
+                            placeholder="Enter your SELECT query here...
+Example:
+SELECT method, path, COUNT(*) as hits 
+FROM nginx_logs 
+WHERE status_code = 200 
+GROUP BY method, path 
+ORDER BY hits DESC"
+                            rows="6"
+                        ></textarea>
+                        <div class="query-controls">
+                            <button id="execute-query" class="btn-primary">Execute Query</button>
+                            <button id="clear-query" class="btn-secondary">Clear</button>
+                            <span id="query-status" class="status-text"></span>
+                        </div>
+                    </div>
+
+                    <div class="query-examples">
+                        <h4>Example Queries:</h4>
+                        <div class="example-queries">
+                            <button class="example-query" data-query="SELECT COUNT(*) as total_nginx_logs FROM nginx_logs">
+                                Count nginx logs
+                            </button>
+                            <button class="example-query" data-query="SELECT COUNT(*) as total_nexus_logs FROM nexus_logs">
+                                Count nexus logs
+                            </button>
+                            <button class="example-query" data-query="SELECT method, COUNT(*) as count FROM nginx_logs GROUP BY method ORDER BY count DESC">
+                                HTTP methods in nginx
+                            </button>
+                            <button class="example-query" data-query="SELECT status_code, COUNT(*) as count FROM nginx_logs GROUP BY status_code ORDER BY count DESC">
+                                Status codes in nginx
+                            </button>
+                            <button class="example-query" data-query="SELECT ip_address, COUNT(*) as requests FROM nginx_logs GROUP BY ip_address ORDER BY requests DESC LIMIT 10">
+                                Top IPs in nginx
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Query Results -->
+                <div id="query-results-section" style="display: none;">
+                    <h3>Query Results</h3>
+                    <div class="results-info">
+                        <span id="results-count"></span>
+                        <span id="execution-time"></span>
+                    </div>
+                    <div class="table-wrapper">
+                        <div id="query-results" class="results-table">
+                            <!-- Results populated via JavaScript -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Error Messages -->
+                <div id="error-messages" class="error-container" style="display: none;">
+                    <!-- Error messages populated via JavaScript -->
+                </div>
+            </section>
+
+            <!-- Database Schema Section -->
+            <section id="schema-info">
+                <h2>Database Schema</h2>
+                <div class="schema-container">
+                    <button id="load-schema" class="btn-secondary">Load Schema Information</button>
+                    <div id="schema-details" class="schema-details">
+                        <!-- Schema information loaded via JavaScript -->
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>Log Analysis Application - Built with FastAPI and SQLite</p>
+            <div id="health-status" class="health-status">
+                <button id="check-health" class="btn-secondary">Check Application Health</button>
+                <div id="health-results"></div>
+            </div>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', path='/script.js') }}"></script>
+</body>
+</html>
