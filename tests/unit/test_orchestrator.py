@@ -293,4 +293,4 @@ class TestLogProcessingOrchestrator:
         assert "Total parse errors: 35" in captured.out
         assert "nginx logs:" in captured.out
         assert "Nexus logs:" in captured.out
-        assert "Performance:" in captured.out
+        # Note: Performance section removed from implementation - timing shown per log type instead

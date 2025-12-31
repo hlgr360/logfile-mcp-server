@@ -23,18 +23,22 @@ from .models import Base
 class DatabaseConnection:
     """
     AI: Database connection manager with SQLite optimization.
-    
+
     Handles:
     - Fresh database creation per ADR requirement
     - Connection pooling and session management
     - Schema creation with indexes
     - Proper resource cleanup
+
+    Supports context manager protocol for automatic cleanup:
+        with DatabaseConnection(db_path) as db:
+            db.execute_raw_sql("SELECT * FROM nginx_logs")
     """
-    
+
     def __init__(self, db_path: str, fresh_start: bool = True):
         """
         AI: Initialize database connection with optional fresh database creation.
-        
+
         Args:
             db_path: Path to SQLite database file
             fresh_start: If True, drop/recreate database on start (per ADR)
@@ -45,6 +49,15 @@ class DatabaseConnection:
         self.engine: Engine = None
         self.SessionLocal: sessionmaker = None
         self._initialize_database()
+
+    def __enter__(self):
+        """AI: Context manager entry - return self for use in with statement."""
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """AI: Context manager exit - ensure resources are cleaned up."""
+        self.close()
+        return False  # Don't suppress exceptions
     
     def _initialize_database(self) -> None:
         """

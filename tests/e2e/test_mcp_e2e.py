@@ -29,13 +29,12 @@ class TestMCPEndToEnd:
     async def populated_db_ops(self):
         """Create a temporary database with comprehensive test data."""
         # Use the shared test database factory for consistent data
-        db_ops, db_path = TestDatabaseFactory.create_temporary_database()
-        
+        db_ops, db_conn, db_path = TestDatabaseFactory.create_temporary_database()
+
         yield db_ops
 
         # Cleanup
-        db_ops.db_connection.close()
-        TestDatabaseFactory.cleanup_database(db_path)
+        TestDatabaseFactory.cleanup_database(db_path, db_conn)
 
     @pytest.mark.asyncio
     async def test_mcp_tools_direct(self, populated_db_ops):

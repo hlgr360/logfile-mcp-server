@@ -348,9 +348,9 @@ class TestWebServerStartup:
             
             # Test server startup (lines 289-320)
             start_web_server(mock_settings, mock_db_ops)
-            
+
             # Verify server configuration
-            assert mock_create_app.called_with(mock_settings)
+            mock_create_app.assert_called_with(mock_settings)
             assert mock_config.called
             assert mock_server.called
             assert mock_thread.called
@@ -390,11 +390,11 @@ class TestMCPServerStartup:
             
             # Test server startup (lines 331-354)
             start_mcp_server(mock_settings, mock_db_ops)
-            
+
             # Verify server creation and startup
-            assert mock_create_server.called_with(
+            mock_create_server.assert_called_with(
                 db_ops=mock_db_ops,
-                host="0.0.0.0", 
+                host="0.0.0.0",
                 port=8001
             )
             assert mock_server.start.called

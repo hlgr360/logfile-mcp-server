@@ -102,13 +102,12 @@ class TestWebInterfaceIntegration:
     def test_index_page_loads(self, mock_db_conn, mock_db_ops, mock_settings):
         """AI: Test that index page loads successfully."""
         app = create_web_app(mock_settings)
-        client = TestClient(app)
-        
-        response = client.get("/")
-        
-        assert response.status_code == 200
-        assert "text/html" in response.headers["content-type"]
-        assert "Log Analysis Application" in response.text
+        with TestClient(app) as client:
+            response = client.get("/")
+
+            assert response.status_code == 200
+            assert "text/html" in response.headers["content-type"]
+            assert "Log Analysis Application" in response.text
     
     @patch('app.web.routes.DatabaseOperations')
     @patch('app.web.routes.DatabaseConnection')
@@ -129,21 +128,20 @@ class TestWebInterfaceIntegration:
                 "file_source": "test.log"
             }
         ]
-        
+
         app = create_web_app(mock_settings)
-        client = TestClient(app)
-        
-        response = client.get("/api/nginx-preview")
-        
-        assert response.status_code == 200
-        data = response.json()
-        assert isinstance(data, list)
-        assert len(data) == 1
-        assert data[0]["ip_address"] == "192.168.1.1"
-        assert data[0]["method"] == "GET"
-        
-        # Verify database query was called correctly
-        mock_db_instance.get_nginx_preview.assert_called_once_with(10)
+        with TestClient(app) as client:
+            response = client.get("/api/nginx-preview")
+
+            assert response.status_code == 200
+            data = response.json()
+            assert isinstance(data, list)
+            assert len(data) == 1
+            assert data[0]["ip_address"] == "192.168.1.1"
+            assert data[0]["method"] == "GET"
+
+            # Verify database query was called correctly
+            mock_db_instance.get_nginx_preview.assert_called_once_with(10)
     
     @patch('app.web.routes.DatabaseOperations')
     @patch('app.web.routes.DatabaseConnection')
@@ -166,22 +164,21 @@ class TestWebInterfaceIntegration:
                 "file_source": "nexus.log"
             }
         ]
-        
+
         app = create_web_app(mock_settings)
-        client = TestClient(app)
-        
-        response = client.get("/api/nexus-preview")
-        
-        assert response.status_code == 200
-        data = response.json()
-        assert isinstance(data, list)
-        assert len(data) == 1
-        assert data[0]["ip_address"] == "10.1.1.1"
-        assert data[0]["method"] == "POST"
-        assert data[0]["thread_info"] == "[qtp123-45]"
-        
-        # Verify database query was called correctly
-        mock_db_instance.get_nexus_preview.assert_called_once_with(10)
+        with TestClient(app) as client:
+            response = client.get("/api/nexus-preview")
+
+            assert response.status_code == 200
+            data = response.json()
+            assert isinstance(data, list)
+            assert len(data) == 1
+            assert data[0]["ip_address"] == "10.1.1.1"
+            assert data[0]["method"] == "POST"
+            assert data[0]["thread_info"] == "[qtp123-45]"
+
+            # Verify database query was called correctly
+            mock_db_instance.get_nexus_preview.assert_called_once_with(10)
     
     @patch('app.web.routes.DatabaseOperations')
     @patch('app.web.routes.DatabaseConnection')
@@ -194,54 +191,52 @@ class TestWebInterfaceIntegration:
             {"count": 150, "method": "GET"},
             {"count": 75, "method": "POST"}
         ]
-        
+
         app = create_web_app(mock_settings)
-        client = TestClient(app)
-        
-        query_data = {
-            "query": "SELECT method, COUNT(*) as count FROM nginx_logs GROUP BY method",
-            "limit": 100
-        }
-        
-        response = client.post("/api/execute-query", json=query_data)
-        
-        assert response.status_code == 200
-        data = response.json()
-        
-        assert "results" in data
-        assert "row_count" in data
-        assert "columns" in data
-        assert "execution_time" in data
-        
-        assert data["row_count"] == 2
-        assert len(data["results"]) == 2
-        assert data["columns"] == ["count", "method"]
-        assert data["results"][0]["method"] == "GET"
-        
-        # Verify query was executed with correct parameters
-        mock_db_instance.execute_query.assert_called_once()
+        with TestClient(app) as client:
+            query_data = {
+                "query": "SELECT method, COUNT(*) as count FROM nginx_logs GROUP BY method",
+                "limit": 100
+            }
+
+            response = client.post("/api/execute-query", json=query_data)
+
+            assert response.status_code == 200
+            data = response.json()
+
+            assert "results" in data
+            assert "row_count" in data
+            assert "columns" in data
+            assert "execution_time" in data
+
+            assert data["row_count"] == 2
+            assert len(data["results"]) == 2
+            assert data["columns"] == ["count", "method"]
+            assert data["results"][0]["method"] == "GET"
+
+            # Verify query was executed with correct parameters
+            mock_db_instance.execute_query.assert_called_once()
     
     @patch('app.web.routes.DatabaseOperations')
     @patch('app.web.routes.DatabaseConnection')
     def test_execute_query_security_validation(self, mock_db_conn, mock_db_ops, mock_settings):
         """AI: Test SQL injection protection and query validation."""
         app = create_web_app(mock_settings)
-        client = TestClient(app)
-        
-        # Test non-SELECT query
-        forbidden_queries = [
-            {"query": "DELETE FROM nginx_logs WHERE id = 1"},
-            {"query": "UPDATE nginx_logs SET status_code = 500"},
-            {"query": "INSERT INTO nginx_logs VALUES (...)"},
-            {"query": "DROP TABLE nginx_logs"},
-            {"query": "ALTER TABLE nginx_logs ADD COLUMN test TEXT"},
-            {"query": "CREATE TABLE malicious (id INT)"}
-        ]
-        
-        for query_data in forbidden_queries:
-            response = client.post("/api/execute-query", json=query_data)
-            assert response.status_code == 400
-            assert "Only SELECT queries are allowed" in response.json()["detail"]
+        with TestClient(app) as client:
+            # Test non-SELECT query
+            forbidden_queries = [
+                {"query": "DELETE FROM nginx_logs WHERE id = 1"},
+                {"query": "UPDATE nginx_logs SET status_code = 500"},
+                {"query": "INSERT INTO nginx_logs VALUES (...)"},
+                {"query": "DROP TABLE nginx_logs"},
+                {"query": "ALTER TABLE nginx_logs ADD COLUMN test TEXT"},
+                {"query": "CREATE TABLE malicious (id INT)"}
+            ]
+
+            for query_data in forbidden_queries:
+                response = client.post("/api/execute-query", json=query_data)
+                assert response.status_code == 400
+                assert "Only SELECT queries are allowed" in response.json()["detail"]
     
     @patch('app.web.routes.DatabaseOperations')
     @patch('app.web.routes.DatabaseConnection')
@@ -263,27 +258,26 @@ class TestWebInterfaceIntegration:
         
         mock_db_instance.get_table_schema.side_effect = [nginx_schema, nexus_schema]
         mock_db_instance.get_table_row_count.side_effect = [250, 150]
-        
+
         app = create_web_app(mock_settings)
-        client = TestClient(app)
-        
-        response = client.get("/api/table-info")
-        
-        assert response.status_code == 200
-        data = response.json()
-        
-        assert "tables" in data
-        assert len(data["tables"]) == 2
-        
-        # Check nginx table info
-        nginx_table = next(t for t in data["tables"] if t["table_name"] == "nginx_logs")
-        assert nginx_table["row_count"] == 250
-        assert len(nginx_table["columns"]) == 2
-        
-        # Check nexus table info  
-        nexus_table = next(t for t in data["tables"] if t["table_name"] == "nexus_logs")
-        assert nexus_table["row_count"] == 150
-        assert len(nexus_table["columns"]) == 2
+        with TestClient(app) as client:
+            response = client.get("/api/table-info")
+
+            assert response.status_code == 200
+            data = response.json()
+
+            assert "tables" in data
+            assert len(data["tables"]) == 2
+
+            # Check nginx table info
+            nginx_table = next(t for t in data["tables"] if t["table_name"] == "nginx_logs")
+            assert nginx_table["row_count"] == 250
+            assert len(nginx_table["columns"]) == 2
+
+            # Check nexus table info
+            nexus_table = next(t for t in data["tables"] if t["table_name"] == "nexus_logs")
+            assert nexus_table["row_count"] == 150
+            assert len(nexus_table["columns"]) == 2
     
     @patch('app.web.routes.DatabaseOperations')
     @patch('app.web.routes.DatabaseConnection')
@@ -293,20 +287,19 @@ class TestWebInterfaceIntegration:
         mock_db_instance = Mock()
         mock_db_ops.return_value = mock_db_instance
         mock_db_instance.get_table_row_count.side_effect = [100, 50]  # nginx, nexus counts
-        
+
         app = create_web_app(mock_settings)
-        client = TestClient(app)
-        
-        response = client.get("/health")
-        
-        assert response.status_code == 200
-        data = response.json()
-        
-        assert data["status"] == "healthy"
-        assert data["database"] == "connected"
-        assert data["nginx_logs_count"] == 100
-        assert data["nexus_logs_count"] == 50
-        assert data["total_entries"] == 150
+        with TestClient(app) as client:
+            response = client.get("/health")
+
+            assert response.status_code == 200
+            data = response.json()
+
+            assert data["status"] == "healthy"
+            assert data["database"] == "connected"
+            assert data["nginx_logs_count"] == 100
+            assert data["nexus_logs_count"] == 50
+            assert data["total_entries"] == 150
     
     @patch('app.web.routes.DatabaseOperations')
     @patch('app.web.routes.DatabaseConnection')
@@ -316,29 +309,27 @@ class TestWebInterfaceIntegration:
         mock_db_instance = Mock()
         mock_db_ops.return_value = mock_db_instance
         mock_db_instance.execute_query.side_effect = Exception("Database connection failed")
-        
+
         app = create_web_app(mock_settings)
-        client = TestClient(app)
-        
-        response = client.get("/api/nginx-preview")
-        
-        assert response.status_code == 500
-        assert "Database error" in response.json()["detail"]
+        with TestClient(app) as client:
+            response = client.get("/api/nginx-preview")
+
+            assert response.status_code == 500
+            assert "Database error" in response.json()["detail"]
     
     def test_static_files_served(self, mock_settings):
         """AI: Test that static files are properly served."""
         app = create_web_app(mock_settings)
-        client = TestClient(app)
-        
-        # Test CSS file
-        response = client.get("/static/style.css")
-        assert response.status_code == 200
-        assert "text/css" in response.headers.get("content-type", "")
-        
-        # Test JavaScript file
-        response = client.get("/static/script.js")
-        assert response.status_code == 200
-        assert "javascript" in response.headers.get("content-type", "")
+        with TestClient(app) as client:
+            # Test CSS file
+            response = client.get("/static/style.css")
+            assert response.status_code == 200
+            assert "text/css" in response.headers.get("content-type", "")
+
+            # Test JavaScript file
+            response = client.get("/static/script.js")
+            assert response.status_code == 200
+            assert "javascript" in response.headers.get("content-type", "")
 
 
 class TestWebInterfaceConfigurationConsistency:

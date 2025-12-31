@@ -14,6 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 from typing import List, Dict, Any, Optional
+from contextlib import asynccontextmanager
 import logging
 from pathlib import Path
 
@@ -58,34 +59,49 @@ class SchemaResponse(BaseModel):
 def create_web_app(settings: Settings) -> FastAPI:
     """
     AI: Create FastAPI web application with all routes and middleware.
-    
+
     Args:
         settings: Application configuration settings
-        
+
     Returns:
         Configured FastAPI application instance
     """
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        """
+        AI: Lifespan context manager for database connection management.
+
+        Ensures database connections are properly closed when app shuts down,
+        preventing ResourceWarnings per best-practices/PYTHON.md.
+        """
+        # Startup: Create database connection
+        db_connection = DatabaseConnection(settings.db_name, fresh_start=False)
+        db_operations = DatabaseOperations(db_connection)
+        app.state.db_operations = db_operations
+        app.state.db_connection = db_connection
+
+        yield  # Application runs
+
+        # Shutdown: Close database connection
+        db_connection.close()
+
     app = FastAPI(
         title="Log Analysis Application",
         description="Nexus and nginx log correlation and analysis",
-        version="1.0.0"
+        version="1.0.0",
+        lifespan=lifespan
     )
-    
+
     # Mount static files
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
-    
+
     # Setup templates
     templates = Jinja2Templates(directory=str(TEMPLATE_DIR))
-    
-    # Create single database connection and operations instance
-    # Use existing database (don't recreate) for web interface
-    db_connection = DatabaseConnection(settings.db_name, fresh_start=False)
-    db_operations = DatabaseOperations(db_connection)
-    
+
     # Dependency injection for database
-    def get_database() -> DatabaseOperations:
+    def get_database(request: Request) -> DatabaseOperations:
         """AI: Dependency injection for database connections."""
-        return db_operations
+        return request.app.state.db_operations
     
     @app.get("/", response_class=HTMLResponse)
     async def serve_index(request: Request):

@@ -218,7 +218,9 @@ class LogFileDiscovery:
                     # Extract safely, checking for path traversal
                     for member in tar.getmembers():
                         if self._is_safe_path(member.name):
-                            tar.extract(member, extract_to)
+                            # Use filter='data' to comply with Python 3.14+ security requirements
+                            # Path traversal protection is already handled by _is_safe_path()
+                            tar.extract(member, extract_to, filter='data')
                         else:
                             print(f"WARNING: Unsafe path in archive: {member.name}")
                 return True

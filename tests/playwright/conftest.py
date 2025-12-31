@@ -21,6 +21,24 @@ from app.config import Settings
 from tests.fixtures.test_database import TestDatabaseFactory
 
 
+def _run_test_server(db_path: str, port: int):
+    """
+    AI: Run FastAPI server in separate process for Playwright tests.
+
+    Must be defined at module level for multiprocessing serialization.
+    Creates app inside subprocess to avoid serialization issues.
+    """
+    import uvicorn
+    test_settings = Settings(
+        nexus_dir="/tmp/test_nexus",
+        nginx_dir="/tmp/test_nginx",
+        db_name=db_path,
+        web_port=port
+    )
+    app = create_web_app(test_settings)
+    uvicorn.run(app, host="127.0.0.1", port=port, log_level="critical")
+
+
 def wait_for_server(url: str, timeout: int = 10, interval: float = 0.1) -> bool:
     """AI: Wait for web server to be ready."""
     start_time = time.time()
@@ -46,27 +64,15 @@ def web_server():
         Path(test_db_path).unlink()
     
     # Setup test database with comprehensive test data
-    db_ops = TestDatabaseFactory.create_test_database(test_db_path, use_sample_logs=False)
-    
-    # Create test settings
-    test_settings = Settings(
-        nexus_dir="/tmp/test_nexus",
-        nginx_dir="/tmp/test_nginx", 
-        db_name=test_db_path,
-        web_port=8001  # Use different port for testing
-    )
-    
-    # Create and start the FastAPI app
-    app = create_web_app(test_settings)
-    
-    import uvicorn
+    db_ops, db_conn = TestDatabaseFactory.create_test_database(test_db_path, use_sample_logs=False)
+
+    # Start server in separate process using module-level function
+    # (avoids multiprocessing serialization issues with local functions)
     import multiprocessing
-    
-    def run_server():
-        uvicorn.run(app, host="127.0.0.1", port=8001, log_level="critical")
-    
-    # Start server in separate process
-    server_process = multiprocessing.Process(target=run_server)
+    server_process = multiprocessing.Process(
+        target=_run_test_server,
+        args=(test_db_path, 8001)
+    )
     server_process.start()
     
     # Wait for server to be ready
@@ -84,6 +90,4 @@ def web_server():
         server_process.kill()
     
     # Close database and remove test database
-    db_ops.db_connection.close()
-    if Path(test_db_path).exists():
-        Path(test_db_path).unlink()
+    TestDatabaseFactory.cleanup_database(test_db_path, db_conn)

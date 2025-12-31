@@ -162,39 +162,47 @@ class TestDatabaseFactory:
         }
     
     @staticmethod
-    def create_test_database(db_path: Optional[str] = None, 
+    def create_test_database(db_path: Optional[str] = None,
                            use_sample_logs: bool = False,
-                           fresh_start: bool = True) -> DatabaseOperations:
+                           fresh_start: bool = True) -> tuple[DatabaseOperations, DatabaseConnection]:
         """
         AI: Create a test database with comprehensive data.
-        
+
         Args:
             db_path: Path to database file (temporary if None)
             use_sample_logs: Whether to process actual log files or use test data
             fresh_start: Whether to recreate database from scratch
-            
+
         Returns:
-            DatabaseOperations instance with populated test data
+            Tuple of (DatabaseOperations, DatabaseConnection) - caller must close connection
+
+        Example:
+            db_ops, db_conn = TestDatabaseFactory.create_test_database()
+            try:
+                # Use db_ops for testing
+                pass
+            finally:
+                db_conn.close()  # Ensure cleanup
         """
-        
+
         if db_path is None:
             # Create temporary database file
             temp_file = tempfile.NamedTemporaryFile(suffix='.db', delete=False)
             db_path = temp_file.name
             temp_file.close()
-        
+
         # Create database connection and operations
         db_connection = DatabaseConnection(db_path, fresh_start=fresh_start)
         db_ops = DatabaseOperations(db_connection)
-        
+
         if use_sample_logs:
             # Use actual log file processing for realistic demo data
             TestDatabaseFactory._populate_from_sample_logs(db_ops, db_path)
         else:
             # Use predefined test data for consistent testing
             TestDatabaseFactory._populate_with_test_data(db_ops)
-        
-        return db_ops
+
+        return db_ops, db_connection
     
     @staticmethod
     def _populate_from_sample_logs(db_ops: DatabaseOperations, db_path: str):
@@ -226,37 +234,65 @@ class TestDatabaseFactory:
         db_ops.batch_insert_nexus_logs(nexus_logs)
     
     @staticmethod
-    def create_temporary_database() -> tuple[DatabaseOperations, str]:
+    def create_temporary_database() -> tuple[DatabaseOperations, DatabaseConnection, str]:
         """
         AI: Create a temporary database that will be cleaned up automatically.
-        
+
         Returns:
-            Tuple of (DatabaseOperations, db_path) for cleanup
+            Tuple of (DatabaseOperations, DatabaseConnection, db_path) for cleanup
+
+        Example:
+            db_ops, db_conn, db_path = TestDatabaseFactory.create_temporary_database()
+            try:
+                # Use db_ops for testing
+                pass
+            finally:
+                db_conn.close()
+                TestDatabaseFactory.cleanup_database(db_path)
         """
         temp_file = tempfile.NamedTemporaryFile(suffix='.db', delete=False)
         db_path = temp_file.name
         temp_file.close()
-        
-        db_ops = TestDatabaseFactory.create_test_database(db_path)
-        return db_ops, db_path
-    
+
+        db_ops, db_conn = TestDatabaseFactory.create_test_database(db_path)
+        return db_ops, db_conn, db_path
+
     @staticmethod
-    def cleanup_database(db_path: str):
-        """AI: Clean up temporary database file."""
+    def cleanup_database(db_path: str, db_connection: Optional[DatabaseConnection] = None):
+        """
+        AI: Clean up database resources.
+
+        Args:
+            db_path: Path to database file to delete
+            db_connection: Optional connection to close before file deletion
+        """
+        if db_connection:
+            db_connection.close()
+
         if Path(db_path).exists():
             Path(db_path).unlink()
 
 
 # Convenience functions for direct usage
-def create_test_db(use_sample_logs: bool = False) -> DatabaseOperations:
-    """AI: Quick function to create test database with default settings."""
+def create_test_db(use_sample_logs: bool = False) -> tuple[DatabaseOperations, DatabaseConnection]:
+    """
+    AI: Quick function to create test database with default settings.
+
+    Returns:
+        Tuple of (DatabaseOperations, DatabaseConnection) - caller must close connection
+    """
     return TestDatabaseFactory.create_test_database(use_sample_logs=use_sample_logs)
 
 
-def create_demo_db(db_path: str = "demo.db") -> DatabaseOperations:
-    """AI: Create demo database with realistic data from sample logs."""
+def create_demo_db(db_path: str = "demo.db") -> tuple[DatabaseOperations, DatabaseConnection]:
+    """
+    AI: Create demo database with realistic data from sample logs.
+
+    Returns:
+        Tuple of (DatabaseOperations, DatabaseConnection) - caller must close connection
+    """
     return TestDatabaseFactory.create_test_database(
-        db_path=db_path, 
+        db_path=db_path,
         use_sample_logs=True,
         fresh_start=True
     )
