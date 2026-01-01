@@ -267,7 +267,7 @@ class TestLogProcessingOrchestrator:
             'parse_errors': 25,
             'processing_time': 1.5
         })
-        
+
         self.orchestrator.statistics.nexus_stats.update({
             'files_processed': 2,
             'lines_processed': 300,
@@ -275,22 +275,37 @@ class TestLogProcessingOrchestrator:
             'parse_errors': 10,
             'processing_time': 1.0
         })
-        
+
         self.orchestrator.statistics.start_processing()
         self.orchestrator.statistics.end_processing()
-        
-        # Call summary print
-        self.orchestrator._print_processing_summary()
-        
-        # Capture output
-        captured = capsys.readouterr()
-        
-        # Check key information is present
-        assert "PHASE 2: Processing Summary" in captured.out
-        assert "Total files processed: 5" in captured.out
-        assert "Total lines processed: 800" in captured.out
-        assert "Total entries parsed: 765" in captured.out
-        assert "Total parse errors: 35" in captured.out
-        assert "nginx logs:" in captured.out
-        assert "Nexus logs:" in captured.out
-        # Note: Performance section removed from implementation - timing shown per log type instead
+
+        # Temporarily override test mode detection to see INFO messages
+        from app.utils.logger import logger
+        original_level = logger.current_level
+        from app.utils.logger import LogLevel
+        logger.set_level(LogLevel.INFO)
+
+        # Patch _is_test_environment to return False for this test
+        original_method = logger._is_test_environment
+        logger._is_test_environment = lambda: False
+
+        try:
+            # Call summary print
+            self.orchestrator._print_processing_summary()
+
+            # Capture output
+            captured = capsys.readouterr()
+
+            # Check key information is present (now in stderr, not stdout)
+            assert "PHASE 2: Processing Summary" in captured.err
+            assert "Total files processed: 5" in captured.err
+            assert "Total lines processed: 800" in captured.err
+            assert "Total entries parsed: 765" in captured.err
+            assert "Total parse errors: 35" in captured.err
+            assert "nginx logs:" in captured.err
+            assert "Nexus logs:" in captured.err
+            # Note: Performance section removed from implementation - timing shown per log type instead
+        finally:
+            # Restore original state
+            logger.set_level(original_level)
+            logger._is_test_environment = original_method

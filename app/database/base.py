@@ -17,6 +17,7 @@ from sqlalchemy import text
 from contextlib import contextmanager
 
 from app.database.connection import DatabaseConnection
+from ..utils.logger import logger
 
 
 class BaseLogDatabase(ABC):
@@ -35,7 +36,7 @@ class BaseLogDatabase(ABC):
             session.commit()
         except Exception as e:
             session.rollback()
-            print(f"DATABASE_ERROR: Transaction rolled back - {e}")
+            logger.error("DATABASE_ERROR: Transaction rolled back - %s", e)
             raise
         finally:
             session.close()
@@ -72,7 +73,7 @@ class CommonLogDatabase:
             session.commit()
         except Exception as e:
             session.rollback()
-            print(f"DATABASE_ERROR: Transaction rolled back - {e}")
+            logger.error("DATABASE_ERROR: Transaction rolled back - %s", e)
             raise
         finally:
             session.close()
@@ -103,7 +104,7 @@ class CommonLogDatabase:
                 
                 return [dict(zip(columns, row)) for row in rows]
         except Exception as e:
-            print(f"QUERY_ERROR: Failed to execute query - {e}")
+            logger.error("QUERY_ERROR: Failed to execute query - %s", e)
             raise
     
     def get_database_schema(self) -> Dict[str, Any]:
@@ -149,7 +150,7 @@ class CommonLogDatabase:
                 schema_info['statistics'] = self.get_processing_stats()
                 
         except Exception as e:
-            print(f"SCHEMA_ERROR: Failed to get database schema - {e}")
+            logger.error("SCHEMA_ERROR: Failed to get database schema - %s", e)
         
         return schema_info
     
@@ -200,7 +201,7 @@ class CommonLogDatabase:
             }
             
         except Exception as e:
-            print(f"STATS_ERROR: Failed to get processing stats - {e}")
+            logger.error("STATS_ERROR: Failed to get processing stats - %s", e)
             return {"error": str(e)}
     
     def get_table_sample(self, table_name: str, limit: int = 10) -> List[Dict[str, Any]]:
@@ -214,5 +215,5 @@ class CommonLogDatabase:
             query = f"SELECT * FROM {table_name} ORDER BY id DESC LIMIT {limit}"
             return self.execute_query(query)
         except Exception as e:
-            print(f"SAMPLE_ERROR: Failed to get table sample - {e}")
+            logger.error("SAMPLE_ERROR: Failed to get table sample - %s", e)
             return []

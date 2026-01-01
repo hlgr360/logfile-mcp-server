@@ -18,6 +18,7 @@ from typing import Iterator, List, Set, Tuple, TextIO
 import tempfile
 
 from ..config import Settings
+from ..utils.logger import logger
 
 
 class LogFileDiscovery:
@@ -93,14 +94,14 @@ class LogFileDiscovery:
             Tuple of (file_path, source_description) for matching files
         """
         if not base_dir.exists():
-            print(f"WARNING: {log_type} directory does not exist: {base_dir}")
+            logger.warn("WARNING: %s directory does not exist: %s", log_type, base_dir)
             return
-        
+
         if not base_dir.is_dir():
-            print(f"WARNING: {log_type} path is not a directory: {base_dir}")
+            logger.warn("WARNING: %s path is not a directory: %s", log_type, base_dir)
             return
-        
-        print(f"Scanning {log_type} directory: {base_dir}")
+
+        logger.info("Scanning %s directory: %s", log_type, base_dir)
         
         # Track processed files to avoid duplicates
         processed_files: Set[str] = set()
@@ -177,10 +178,10 @@ class LogFileDiscovery:
             Tuple of (extracted_file_path, source_description) for matching files
         """
         if depth >= self.max_archive_depth:
-            print(f"WARNING: Maximum archive depth ({self.max_archive_depth}) reached for {archive_path}")
+            logger.warn("WARNING: Maximum archive depth (%d) reached for %s", self.max_archive_depth, archive_path)
             return
-        
-        print(f"Processing archive (depth {depth}): {archive_path}")
+
+        logger.info("Processing archive (depth %d): %s", depth, archive_path)
         
         try:
             # Create temporary directory for extraction
@@ -196,7 +197,7 @@ class LogFileDiscovery:
                 )
             
         except Exception as e:
-            print(f"ERROR: Failed to process archive {archive_path}: {e}")
+            logger.error("ERROR: Failed to process archive %s: %s", archive_path, e)
     
     def _extract_archive(self, archive_path: Path, extract_to: Path) -> bool:
         """
@@ -222,7 +223,7 @@ class LogFileDiscovery:
                             # Path traversal protection is already handled by _is_safe_path()
                             tar.extract(member, extract_to, filter='data')
                         else:
-                            print(f"WARNING: Unsafe path in archive: {member.name}")
+                            logger.warn("WARNING: Unsafe path in archive: %s", member.name)
                 return True
                 
             elif archive_path.suffix == '.zip':
@@ -232,7 +233,7 @@ class LogFileDiscovery:
                         if self._is_safe_path(member):
                             zip_file.extract(member, extract_to)
                         else:
-                            print(f"WARNING: Unsafe path in archive: {member}")
+                            logger.warn("WARNING: Unsafe path in archive: %s", member)
                 return True
                 
             elif archive_path.suffix == '.gz' and not archive_path.name.endswith('.tar.gz'):
@@ -250,11 +251,11 @@ class LogFileDiscovery:
                 return True
                 
             else:
-                print(f"WARNING: Unsupported archive format: {archive_path}")
+                logger.warn("WARNING: Unsupported archive format: %s", archive_path)
                 return False
-                
+
         except Exception as e:
-            print(f"ERROR: Failed to extract {archive_path}: {e}")
+            logger.error("ERROR: Failed to extract %s: %s", archive_path, e)
             return False
     
     def _is_safe_path(self, path: str) -> bool:
@@ -311,19 +312,19 @@ class LogFileDiscovery:
     def cleanup_temp_dirs(self):
         """
         AI: Clean up temporary directories created during archive processing.
-        
+
         Should be called when file discovery is complete to free disk space.
         """
         import shutil
-        
+
         for temp_dir in self._temp_dirs:
             try:
                 if os.path.exists(temp_dir):
                     shutil.rmtree(temp_dir)
-                    print(f"Cleaned up temporary directory: {temp_dir}")
+                    logger.info("Cleaned up temporary directory: %s", temp_dir)
             except Exception as e:
-                print(f"WARNING: Failed to cleanup temp directory {temp_dir}: {e}")
-        
+                logger.warn("WARNING: Failed to cleanup temp directory %s: %s", temp_dir, e)
+
         self._temp_dirs.clear()
     
     def __del__(self):
@@ -334,14 +335,14 @@ class LogFileDiscovery:
 def create_file_iterator_from_path(file_path: Path, source_description: str) -> Iterator[Tuple[str, TextIO]]:
     """
     AI: Create file iterator for processing discovered files.
-    
+
     Provides consistent interface for processors to handle both direct files
     and extracted archive contents.
-    
+
     Args:
         file_path: Path to file to process
         source_description: Description for tracking file source
-        
+
     Yields:
         Tuple of (source_description, file_handle) for processing
     """
@@ -349,4 +350,4 @@ def create_file_iterator_from_path(file_path: Path, source_description: str) -> 
         with open(file_path, 'r', encoding='utf-8', errors='replace') as file_handle:
             yield (source_description, file_handle)
     except Exception as e:
-        print(f"ERROR: Failed to open file {file_path}: {e}")
+        logger.error("ERROR: Failed to open file %s: %s", file_path, e)

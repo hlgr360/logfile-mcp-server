@@ -34,23 +34,23 @@ class TestFileDiscoveryAdvanced:
     def test_discover_files_nonexistent_directory(self):
         """AI: Test file discovery with non-existent directory - covers lines 96-97."""
         with patch('pathlib.Path.exists', return_value=False):
-            with patch('builtins.print') as mock_print:
+            with patch('app.file_discovery.discovery.logger.warn') as mock_logger_warn:
                 files = list(self.discovery.discover_nginx_files())
                 
                 assert len(files) == 0
-                mock_print.assert_called_once()
-                assert "does not exist" in mock_print.call_args[0][0]
+                mock_logger_warn.assert_called_once()
+                assert "does not exist" in mock_logger_warn.call_args[0][0]
     
     def test_discover_files_directory_is_file(self):
         """AI: Test file discovery when path is file not directory - covers lines 100-101."""
         with patch('pathlib.Path.exists', return_value=True), \
              patch('pathlib.Path.is_dir', return_value=False):
-            with patch('builtins.print') as mock_print:
+            with patch('app.file_discovery.discovery.logger.warn') as mock_logger_warn:
                 files = list(self.discovery.discover_nexus_files())
                 
                 assert len(files) == 0
-                mock_print.assert_called_once()
-                assert "is not a directory" in mock_print.call_args[0][0]
+                mock_logger_warn.assert_called_once()
+                assert "is not a directory" in mock_logger_warn.call_args[0][0]
     
     def test_discover_files_duplicate_processing_prevention(self):
         """AI: Test that duplicate files are processed only once - covers line 119."""
@@ -81,15 +81,15 @@ class TestFileDiscoveryAdvanced:
         archive_path = Path("/test/nested.tar")
         patterns = ["*.log"]
         
-        with patch('builtins.print') as mock_print:
+        with patch('app.file_discovery.discovery.logger.warn') as mock_logger_warn:
             # Test with depth at maximum
             results = list(self.discovery._process_archive_recursive(
                 archive_path, patterns, "test", depth=2  # At max depth
             ))
             
             assert len(results) == 0
-            mock_print.assert_called_once()
-            assert "Maximum archive depth" in mock_print.call_args[0][0]
+            mock_logger_warn.assert_called_once()
+            assert "Maximum archive depth" in mock_logger_warn.call_args[0][0]
     
     def test_process_archive_extraction_failure(self):
         """AI: Test archive processing with extraction failure - covers lines 198-199."""
@@ -102,14 +102,14 @@ class TestFileDiscoveryAdvanced:
             
             patterns = ["*.log"]
             
-            with patch('builtins.print') as mock_print:
+            with patch('app.file_discovery.discovery.logger.error') as mock_logger_error:
                 results = list(self.discovery._process_archive_recursive(
                     fake_archive, patterns, "test", depth=0
                 ))
                 
                 assert len(results) == 0
                 # Should have printed error message
-                error_calls = [call for call in mock_print.call_args_list 
+                error_calls = [call for call in mock_logger_error.call_args_list 
                               if "ERROR" in str(call)]
                 assert len(error_calls) > 0
     
@@ -124,12 +124,12 @@ class TestFileDiscoveryAdvanced:
             unsupported_archive = temp_path / "test.rar"
             unsupported_archive.write_text("unsupported format")
             
-            with patch('builtins.print') as mock_print:
+            with patch('app.file_discovery.discovery.logger.warn') as mock_logger_warn:
                 result = self.discovery._extract_archive(unsupported_archive, extract_to)
                 
                 assert result is False
-                mock_print.assert_called_once()
-                assert "Unsupported archive format" in mock_print.call_args[0][0]
+                mock_logger_warn.assert_called_once()
+                assert "Unsupported archive format" in mock_logger_warn.call_args[0][0]
     
     def test_extract_archive_tarfile_unsafe_paths(self):
         """AI: Test tar extraction with unsafe paths - covers lines 226-230."""
@@ -151,15 +151,15 @@ class TestFileDiscoveryAdvanced:
             mock_tar.__exit__ = Mock(return_value=None)
             
             with patch('tarfile.open', return_value=mock_tar), \
-                 patch('builtins.print') as mock_print:
-                
+                 patch('app.file_discovery.discovery.logger.warn') as mock_logger_warn:
+
                 result = self.discovery._extract_archive(archive_path, extract_to)
-                
+
                 assert result is True
                 # Should not extract unsafe member
                 mock_tar.extract.assert_not_called()
                 # Should print warning
-                warning_calls = [call for call in mock_print.call_args_list 
+                warning_calls = [call for call in mock_logger_warn.call_args_list
                                if "Unsafe path" in str(call)]
                 assert len(warning_calls) > 0
     
@@ -179,15 +179,15 @@ class TestFileDiscoveryAdvanced:
             mock_zip.__exit__ = Mock(return_value=None)
             
             with patch('zipfile.ZipFile', return_value=mock_zip), \
-                 patch('builtins.print') as mock_print:
-                
+                 patch('app.file_discovery.discovery.logger.warn') as mock_logger_warn:
+
                 result = self.discovery._extract_archive(archive_path, extract_to)
-                
+
                 assert result is True
                 # Should not extract unsafe member
                 mock_zip.extract.assert_not_called()
                 # Should print warning
-                warning_calls = [call for call in mock_print.call_args_list 
+                warning_calls = [call for call in mock_logger_warn.call_args_list
                                if "Unsafe path" in str(call)]
                 assert len(warning_calls) > 0
     
@@ -227,13 +227,13 @@ class TestFileDiscoveryAdvanced:
             
             archive_path = temp_path / "corrupt.tar"
             archive_path.write_text("corrupt archive")
-            
-            with patch('builtins.print') as mock_print:
+
+            with patch('app.file_discovery.discovery.logger.error') as mock_logger_error:
                 result = self.discovery._extract_archive(archive_path, extract_to)
-                
+
                 assert result is False
                 # Should print error message
-                error_calls = [call for call in mock_print.call_args_list 
+                error_calls = [call for call in mock_logger_error.call_args_list
                               if "ERROR" in str(call)]
                 assert len(error_calls) > 0
     
@@ -288,15 +288,15 @@ class TestLogFileDiscoveryErrorHandling:
     def test_cleanup_temp_dirs_with_exception(self):
         """AI: Test cleanup with removal exception."""
         self.discovery._temp_dirs = ["/fake/temp/dir"]
-        
+
         with patch('os.path.exists', return_value=True), \
              patch('shutil.rmtree', side_effect=OSError("Permission denied")), \
-             patch('builtins.print') as mock_print:
-            
+             patch('app.file_discovery.discovery.logger.warn') as mock_logger_warn:
+
             self.discovery.cleanup_temp_dirs()
-            
+
             # Should print warning about cleanup failure
-            warning_calls = [call for call in mock_print.call_args_list 
+            warning_calls = [call for call in mock_logger_warn.call_args_list
                            if "WARNING" in str(call)]
             assert len(warning_calls) > 0
     
@@ -379,16 +379,16 @@ class TestCreateFileIteratorAdvanced:
         try:
             # Mock permission error
             with patch('builtins.open', side_effect=PermissionError("Access denied")), \
-                 patch('builtins.print') as mock_print:
-                
+                 patch('app.file_discovery.discovery.logger.error') as mock_logger_error:
+
                 iterator = create_file_iterator_from_path(temp_path, "permission_test")
                 results = list(iterator)
-                
+
                 # Should not yield any results
                 assert len(results) == 0
-                
+
                 # Should print error message
-                error_calls = [call for call in mock_print.call_args_list 
+                error_calls = [call for call in mock_logger_error.call_args_list
                               if "ERROR" in str(call)]
                 assert len(error_calls) > 0
                 

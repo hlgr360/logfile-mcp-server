@@ -151,6 +151,16 @@ class TestMCPServerTransport:
         self.mock_db_connection.db_path = "/test/mock.db"
         self.mock_db_ops.db_connection = self.mock_db_connection
 
+        # Disable test mode detection to see INFO-level logger messages
+        from app.utils.logger import logger
+        self._original_is_test = logger._is_test_environment
+        logger._is_test_environment = lambda: False
+
+    def teardown_method(self):
+        """AI: Restore logger test mode detection after each test."""
+        from app.utils.logger import logger
+        logger._is_test_environment = self._original_is_test
+
     def test_stdio_transport_mode_initialization(self):
         """AI: Test server initialization in stdio mode."""
         server = LogAnalysisMCPServer(
@@ -206,13 +216,14 @@ class TestMCPServerTransport:
         
         # Verify stdio server startup process
         captured = capsys.readouterr()
-        assert "🚀 Starting Log Analysis MCP Server for VS Code Copilot" in captured.out
-        assert "📁 Using database: /test/stdio.db" in captured.out
-        assert "📊 Available tools:" in captured.out
-        assert "list_database_schema" in captured.out
-        assert "execute_sql_query" in captured.out
-        assert "get_table_sample" in captured.out
-        assert "🔌 MCP server ready for VS Code Copilot connection" in captured.out
+        # Logger outputs to stderr, not stdout
+        assert "🚀 Starting Log Analysis MCP Server for VS Code Copilot" in captured.err
+        assert "📁 Using database: /test/stdio.db" in captured.err
+        assert "📊 Available tools:" in captured.err
+        assert "list_database_schema" in captured.err
+        assert "execute_sql_query" in captured.err
+        assert "get_table_sample" in captured.err
+        assert "🔌 MCP server ready for VS Code Copilot connection" in captured.err
         
         # Verify asyncio.run was called
         mock_asyncio_run.assert_called_once()
@@ -242,8 +253,9 @@ class TestMCPServerTransport:
         
         # Verify network server startup
         captured = capsys.readouterr()
-        assert "Starting MCP server on localhost:8888" in captured.out
-        assert "✓ MCP server started on localhost:8888" in captured.out
+        # Logger outputs to stderr, not stdout
+        assert "Starting MCP server on localhost:8888" in captured.err
+        assert "✓ MCP server started on localhost:8888" in captured.err
         
         # Verify thread creation and starting
         mock_thread.assert_called_once()
@@ -268,7 +280,8 @@ class TestMCPServerTransport:
         
         # Verify failure message
         captured = capsys.readouterr()
-        assert "✗ MCP server failed to start" in captured.out
+        # Logger outputs to stderr, not stdout
+        assert "✗ MCP server failed to start" in captured.err
 
     def test_run_stdio_server_exception_handling(self):
         """AI: Test stdio server exception handling."""
@@ -318,8 +331,18 @@ class TestMCPServerErrors:
         self.mock_db_connection = Mock()
         self.mock_db_connection.db_path = "/test/mock.db"
         self.mock_db_ops.db_connection = self.mock_db_connection
-        
+
+        # Disable test mode detection to see INFO-level logger messages
+        from app.utils.logger import logger
+        self._original_is_test = logger._is_test_environment
+        logger._is_test_environment = lambda: False
+
         self.server = LogAnalysisMCPServer(db_ops=self.mock_db_ops)
+
+    def teardown_method(self):
+        """AI: Restore logger test mode detection after each test."""
+        from app.utils.logger import logger
+        logger._is_test_environment = self._original_is_test
 
     def test_format_json_response_type_error(self):
         """AI: Test JSON formatting with TypeError."""
@@ -393,8 +416,9 @@ class TestMCPServerErrors:
         assert not server._running
         
         captured = capsys.readouterr()
-        assert "Stopping MCP server" in captured.out
-        assert "✓ MCP server stopped" in captured.out
+        # Logger outputs to stderr, not stdout
+        assert "Stopping MCP server" in captured.err
+        assert "✓ MCP server stopped" in captured.err
 
 
 class TestMCPServerFactory:

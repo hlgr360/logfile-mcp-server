@@ -16,6 +16,8 @@ import click
 from pydantic import Field, field_validator, ConfigDict
 from pydantic_settings import BaseSettings
 
+from .utils.logger import logger
+
 
 class Settings(BaseSettings):
     """
@@ -212,15 +214,15 @@ def validate_configuration(settings: Settings) -> None:
     # Additional directory checks
     nexus_path = Path(settings.nexus_dir)
     nginx_path = Path(settings.nginx_dir)
-    
+
     if nexus_path == nginx_path:
-        print(f"WARNING: Nexus and nginx directories are the same: {nexus_path}")
-    
-    print(f"Configuration validated successfully:")
-    print(f"  Nexus directory: {settings.nexus_dir}")
-    print(f"  nginx directory: {settings.nginx_dir}")
-    print(f"  Database: {settings.db_name}")
-    print(f"  Web port: {settings.web_port}")
+        logger.warn("WARNING: Nexus and nginx directories are the same: %s", nexus_path)
+
+    logger.info("Configuration validated successfully:")
+    logger.info("  Nexus directory: %s", settings.nexus_dir)
+    logger.info("  nginx directory: %s", settings.nginx_dir)
+    logger.info("  Database: %s", settings.db_name)
+    logger.info("  Web port: %d", settings.web_port)
     if settings.enable_mcp_server:
-        print(f"  MCP port: {settings.mcp_port}")
-    print(f"  Max archive depth: {settings.max_archive_depth}")
+        logger.info("  MCP port: %d", settings.mcp_port)
+    logger.info("  Max archive depth: %d", settings.max_archive_depth)

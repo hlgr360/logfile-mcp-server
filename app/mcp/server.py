@@ -6,7 +6,7 @@ with secure access to log analysis database through structured tools.
 
 Server provides three core tools as specified in requirements:
 1. list_database_schema - Database structure inspection
-2. execute_sql_query - Secure SELECT query execution  
+2. execute_sql_query - Secure SELECT query execution
 3. get_table_sample - Sample data retrieval
 
 Supports both stdio transport (for VS Code Copilot) and network transport.
@@ -29,6 +29,7 @@ from mcp.types import Tool, TextContent
 from mcp.server.stdio import stdio_server
 
 from ..database.operations import DatabaseOperations
+from ..utils.logger import logger
 from .tools import MCPTools
 
 
@@ -191,14 +192,14 @@ class LogAnalysisMCPServer:
     def start(self) -> None:
         """
         AI: Start MCP server with appropriate transport.
-        
+
         For stdio mode: runs synchronously (blocking)
         For network mode: runs asynchronously in background thread
         """
         if self._running:
-            print("MCP server is already running")
+            logger.info("MCP server is already running")
             return
-        
+
         if self.transport_mode == TransportMode.STDIO:
             self._start_stdio_server()
         else:
@@ -206,15 +207,15 @@ class LogAnalysisMCPServer:
     
     def _start_stdio_server(self) -> None:
         """AI: Start MCP server in stdio mode for VS Code Copilot."""
-        print("🚀 Starting Log Analysis MCP Server for VS Code Copilot...")
-        print(f"📁 Using database: {self.db_ops.db_connection.db_path}")
-        print("📊 Available tools:")
-        print("   - list_database_schema: Inspect database structure")
-        print("   - execute_sql_query: Run SELECT queries on log data") 
-        print("   - get_table_sample: Get sample data from tables")
-        print()
-        print("🔌 MCP server ready for VS Code Copilot connection...")
-        
+        logger.info("🚀 Starting Log Analysis MCP Server for VS Code Copilot...")
+        logger.info("📁 Using database: %s", self.db_ops.db_connection.db_path)
+        logger.info("📊 Available tools:")
+        logger.info("   - list_database_schema: Inspect database structure")
+        logger.info("   - execute_sql_query: Run SELECT queries on log data")
+        logger.info("   - get_table_sample: Get sample data from tables")
+        logger.info("")
+        logger.info("🔌 MCP server ready for VS Code Copilot connection...")
+
         # Run stdio server synchronously
         asyncio.run(self._run_stdio_server())
     
@@ -224,76 +225,76 @@ class LogAnalysisMCPServer:
             self._running = True
             async with stdio_server() as streams:
                 await self.server.run(
-                    streams[0], 
-                    streams[1], 
+                    streams[0],
+                    streams[1],
                     self.server.create_initialization_options()
                 )
         except Exception as e:
-            print(f"❌ MCP stdio server error: {e}")
+            logger.error("❌ MCP stdio server error: %s", e)
             raise
         finally:
             self._running = False
     
     def _start_network_server(self) -> None:
         """AI: Start MCP server in network mode for background operation."""
-        print(f"Starting MCP server on {self.host}:{self.port}...")
-        
+        logger.info("Starting MCP server on %s:%d...", self.host, self.port)
+
         def run_server():
             """AI: Server thread function."""
             try:
                 # Create new event loop for this thread
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
-                
+
                 # Run the MCP server
                 self._running = True
                 loop.run_until_complete(self._run_network_server())
-                
+
             except Exception as e:
-                print(f"ERROR: MCP server failed: {e}")
+                logger.error("ERROR: MCP server failed: %s", e)
                 self._running = False
             finally:
                 loop.close()
-        
+
         # Start server in background thread
         self._server_thread = threading.Thread(target=run_server, daemon=True)
         self._server_thread.start()
-        
+
         # Give server time to start
         time.sleep(1)
-        
+
         if self._running:
-            print(f"✓ MCP server started on {self.host}:{self.port}")
+            logger.info("✓ MCP server started on %s:%d", self.host, self.port)
         else:
-            print("✗ MCP server failed to start")
+            logger.error("✗ MCP server failed to start")
     
     async def _run_network_server(self) -> None:
         """AI: Run network server for general MCP clients."""
         try:
-            print(f"MCP server listening on {self.host}:{self.port}")
-            
+            logger.info("MCP server listening on %s:%d", self.host, self.port)
+
             # Keep server running - actual network implementation would go here
             # For now, this maintains the server lifecycle
             while self._running:
                 await asyncio.sleep(1)
-                
+
         except Exception as e:
-            print(f"MCP server error: {e}")
+            logger.error("MCP server error: %s", e)
             raise
     
     def stop(self) -> None:
         """AI: Stop MCP server and cleanup resources."""
         if not self._running:
-            print("MCP server is not running")
+            logger.info("MCP server is not running")
             return
-        
-        print("Stopping MCP server...")
+
+        logger.info("Stopping MCP server...")
         self._running = False
-        
+
         if self._server_thread and self._server_thread.is_alive():
             self._server_thread.join(timeout=5)
-        
-        print("✓ MCP server stopped")
+
+        logger.info("✓ MCP server stopped")
     
     def _format_json_response(self, data: Any) -> str:
         """

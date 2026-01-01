@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Dict, Iterator, List, Optional, TextIO, Tuple
 
 from ..database.operations import DatabaseOperations
+from ..utils.logger import logger
 
 logger = logging.getLogger(__name__)
 
@@ -136,7 +137,7 @@ class BaseLogProcessor(ABC):
                     yield batch
                     
         except Exception as e:
-            print(f"ERROR: Failed to process file {file_path}: {e}")
+            logger.error("ERROR: Failed to process file {file_path}: {e}")
             self.error_count += 1
     
     def process_file_content(self, file_obj: TextIO, source_name: str) -> Iterator[List[Dict]]:
@@ -197,7 +198,7 @@ class BaseLogProcessor(ABC):
                 yield batch
                 
         except Exception as e:
-            print(f"ERROR: Failed to process file content from {source_name}: {e}")
+            logger.error("ERROR: Failed to process file content from {source_name}: {e}")
             self.error_count += 1
     
     def process_file_to_database(self, file_handle, source_description: str, db_ops: DatabaseOperations) -> Dict:
@@ -309,7 +310,7 @@ class BaseLogProcessor(ABC):
         try:
             return int(status_str)
         except ValueError:
-            print(f"PARSE_ERROR: {source_file}:{line_number} - Invalid status code: {status_str}")
+            logger.error("PARSE_ERROR: %s:%d - Invalid status code: {status_str}", source_file, line_number)
             return None
 
     def _clean_optional_field(self, field_value: str, default_marker: str = '-') -> Optional[str]:

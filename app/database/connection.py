@@ -18,6 +18,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from .models import Base
+from ..utils.logger import logger
 
 
 class DatabaseConnection:
@@ -68,7 +69,7 @@ class DatabaseConnection:
         # Remove existing database for fresh start (per ADR) only if fresh_start=True
         if self.fresh_start and self.db_path.exists():
             os.remove(self.db_path)
-            print(f"Removed existing database: {self.db_path}")
+            logger.info("Removed existing database: %s", self.db_path)
         
         # Create SQLite engine with optimizations
         self.engine = create_engine(
@@ -92,10 +93,10 @@ class DatabaseConnection:
         Base.metadata.create_all(self.engine)
         
         if self.fresh_start:
-            print(f"Created fresh database with schema: {self.db_path}")
+            logger.info("Created fresh database with schema: %s", self.db_path)
         else:
-            print(f"Connected to existing database: {self.db_path}")
-        print(f"Database size: {self.db_path.stat().st_size} bytes")
+            logger.info("Connected to existing database: %s", self.db_path)
+        logger.info("Database size: {self.db_path.stat().st_size} bytes")
     
     @contextmanager
     def get_session(self) -> Generator[Session, None, None]:
@@ -219,4 +220,4 @@ class DatabaseConnection:
         """AI: Close database connections and cleanup resources."""
         if self.engine:
             self.engine.dispose()
-            print("Database connections closed")
+            logger.info("Database connections closed")

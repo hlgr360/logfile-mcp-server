@@ -16,6 +16,7 @@ from typing import Dict, List, Optional
 from ..database.operations import DatabaseOperations
 from ..config import Settings
 from .base import BaseLogProcessor
+from ..utils.logger import logger
 
 
 class NexusLogProcessor(BaseLogProcessor):
@@ -102,7 +103,7 @@ class NexusLogProcessor(BaseLogProcessor):
                     break
             
             if not match:
-                print(f"PARSE_ERROR: {source_file}:{line_number} - Invalid Nexus log format")
+                logger.error("PARSE_ERROR: %s:%d - Invalid Nexus log format", source_file, line_number)
                 return None
             
             groups = match.groupdict()
@@ -110,7 +111,7 @@ class NexusLogProcessor(BaseLogProcessor):
             # Parse timestamp
             timestamp = self._parse_timestamp(groups['timestamp'])
             if not timestamp:
-                print(f"PARSE_ERROR: {source_file}:{line_number} - Invalid timestamp format")
+                logger.error("PARSE_ERROR: %s:%d - Invalid timestamp format", source_file, line_number)
                 return None
             
             # Parse status code
@@ -149,7 +150,7 @@ class NexusLogProcessor(BaseLogProcessor):
             }
             
         except Exception as e:
-            print(f"UNEXPECTED_ERROR: {source_file}:{line_number} - {e}")
+            logger.error("UNEXPECTED_ERROR: {source_file}:{line_number} - %s", e)
             return None
     
     def _parse_timestamp(self, timestamp_str: str) -> Optional[datetime]:

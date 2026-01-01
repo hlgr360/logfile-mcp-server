@@ -225,19 +225,28 @@ class TestValidateConfiguration:
         nginx_dir = tmp_path / "nginx"
         nexus_dir.mkdir()
         nginx_dir.mkdir()
-        
+
         settings = Settings(
             nexus_dir=str(nexus_dir),
             nginx_dir=str(nginx_dir),
             enable_mcp_server=True
         )
-        
-        # Should not raise exception
-        validate_configuration(settings)
-        
-        # Check output messages
-        captured = capsys.readouterr()
-        assert "Configuration validated successfully" in captured.out
-        assert f"Nexus directory: {nexus_dir.absolute()}" in captured.out
-        assert f"nginx directory: {nginx_dir.absolute()}" in captured.out
-        assert "MCP port: 8001" in captured.out
+
+        # Temporarily override test mode detection to see INFO messages
+        from app.utils.logger import logger
+        original_is_test = logger._is_test_environment
+        logger._is_test_environment = lambda: False
+
+        try:
+            # Should not raise exception
+            validate_configuration(settings)
+
+            # Check output messages (logger outputs to stderr)
+            captured = capsys.readouterr()
+            assert "Configuration validated successfully" in captured.err
+            assert f"Nexus directory: {nexus_dir.absolute()}" in captured.err
+            assert f"nginx directory: {nginx_dir.absolute()}" in captured.err
+            assert "MCP port: 8001" in captured.err
+        finally:
+            # Restore original test mode detection
+            logger._is_test_environment = original_is_test

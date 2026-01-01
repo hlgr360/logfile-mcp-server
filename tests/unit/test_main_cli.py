@@ -24,10 +24,20 @@ from app.config import Settings
 
 class TestMainCLI:
     """AI: Test CLI argument parsing and validation."""
-    
+
     def setup_method(self):
         """AI: Setup test runner before each test."""
         self.runner = CliRunner()
+        # Patch logger to disable test mode suppression for CLI tests
+        # so we can see INFO-level messages in test output
+        from app.utils.logger import logger
+        self._original_is_test = logger._is_test_environment
+        logger._is_test_environment = lambda: False
+
+    def teardown_method(self):
+        """AI: Restore logger test mode detection after each test."""
+        from app.utils.logger import logger
+        logger._is_test_environment = self._original_is_test
     
     def test_cli_argument_parsing_basic_success(self):
         """AI: Test basic CLI argument parsing with valid arguments."""
@@ -418,11 +428,20 @@ class TestMCPServerStartup:
 
 class TestCLIConfigurationConsistency:
     """AI: Test CLI configuration consistency and edge cases."""
-    
+
     def setup_method(self):
         """AI: Setup test runner before each test."""
         self.runner = CliRunner()
-    
+        # Patch logger to disable test mode suppression for CLI tests
+        from app.utils.logger import logger
+        self._original_is_test = logger._is_test_environment
+        logger._is_test_environment = lambda: False
+
+    def teardown_method(self):
+        """AI: Restore logger test mode detection after each test."""
+        from app.utils.logger import logger
+        logger._is_test_environment = self._original_is_test
+
     def test_mcp_server_port_configuration(self):
         """AI: Test MCP server port configuration displays correctly."""
         with patch('app.main.load_settings') as mock_load, \

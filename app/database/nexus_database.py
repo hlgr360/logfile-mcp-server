@@ -10,6 +10,7 @@ from datetime import datetime
 
 from app.database.base import BaseLogDatabase
 from app.database.models import NexusLog
+from ..utils.logger import logger
 
 
 class NexusLogDatabase(BaseLogDatabase):
@@ -56,7 +57,7 @@ class NexusLogDatabase(BaseLogDatabase):
                         )
                         nexus_logs.append(nexus_log)
                     except Exception as e:
-                        print(f"NEXUS_INSERT_ERROR: Skipping invalid entry - {e}")
+                        logger.error("NEXUS_INSERT_ERROR: Skipping invalid entry - %s", e)
                         continue
                 
                 if nexus_logs:
@@ -67,7 +68,7 @@ class NexusLogDatabase(BaseLogDatabase):
                     return 0
                     
         except Exception as e:
-            print(f"NEXUS_BATCH_INSERT_ERROR: Failed to insert nexus logs - {e}")
+            logger.error("NEXUS_BATCH_INSERT_ERROR: Failed to insert nexus logs - %s", e)
             raise
     
     def get_preview(self, limit: int = 10) -> List[Dict]:
@@ -107,7 +108,7 @@ class NexusLogDatabase(BaseLogDatabase):
                 return result
                 
         except Exception as e:
-            print(f"NEXUS_PREVIEW_ERROR: Failed to get nexus preview - {e}")
+            logger.error("NEXUS_PREVIEW_ERROR: Failed to get nexus preview - %s", e)
             return []
     
     def get_top_repositories(self, limit: int = 10) -> List[Dict[str, Any]]:
@@ -125,7 +126,7 @@ class NexusLogDatabase(BaseLogDatabase):
                 result = session.execute(query, {'limit': limit})
                 return [{'repository': row[0], 'activity_count': row[1]} for row in result.fetchall()]
         except Exception as e:
-            print(f"NEXUS_TOP_REPOS_ERROR: Failed to get top repositories - {e}")
+            logger.error("NEXUS_TOP_REPOS_ERROR: Failed to get top repositories - %s", e)
             return []
     
     def get_user_activity(self, limit: int = 10) -> List[Dict[str, Any]]:
@@ -143,7 +144,7 @@ class NexusLogDatabase(BaseLogDatabase):
                 result = session.execute(query, {'limit': limit})
                 return [{'username': row[0], 'activity_count': row[1]} for row in result.fetchall()]
         except Exception as e:
-            print(f"NEXUS_USER_ACTIVITY_ERROR: Failed to get user activity - {e}")
+            logger.error("NEXUS_USER_ACTIVITY_ERROR: Failed to get user activity - %s", e)
             return []
     
     def get_action_distribution(self) -> List[Dict[str, Any]]:
@@ -160,7 +161,7 @@ class NexusLogDatabase(BaseLogDatabase):
                 result = session.execute(query)
                 return [{'action': row[0], 'count': row[1]} for row in result.fetchall()]
         except Exception as e:
-            print(f"NEXUS_ACTION_DIST_ERROR: Failed to get action distribution - {e}")
+            logger.error("NEXUS_ACTION_DIST_ERROR: Failed to get action distribution - %s", e)
             return []
     
     def get_logs_by_timerange(
@@ -192,5 +193,5 @@ class NexusLogDatabase(BaseLogDatabase):
                 return result
                 
         except Exception as e:
-            print(f"NEXUS_TIMERANGE_ERROR: Failed to get logs by timerange - {e}")
+            logger.error("NEXUS_TIMERANGE_ERROR: Failed to get logs by timerange - %s", e)
             return []

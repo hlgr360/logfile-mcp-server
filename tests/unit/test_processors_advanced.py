@@ -11,6 +11,7 @@ from unittest.mock import Mock, patch, MagicMock
 from pathlib import Path
 
 from app.processors.nexus_processor import NexusLogProcessor
+from app.utils.logger import logger
 from app.processors.nginx_processor import NginxLogProcessor
 from app.config import Settings
 from app.database.operations import DatabaseOperations
@@ -33,15 +34,16 @@ class TestProcessorsAdvanced:
         
         # Mock the timestamp parsing to return None to trigger the specific error
         with patch.object(self.processor, '_parse_timestamp', return_value=None), \
-             patch('builtins.print') as mock_print:
+             patch('app.processors.nexus_processor.logger.error') as mock_logger_error:
             
             result = self.processor.parse_log_line(valid_format_log, 1, "test.log")
             
             assert result is None
             # Should print parse error with timestamp format message
-            mock_print.assert_called_once()
-            assert "PARSE_ERROR" in mock_print.call_args[0][0]
-            assert "Invalid timestamp format" in mock_print.call_args[0][0]
+            mock_logger_error.assert_called_once()
+            # Logger uses format strings, check first arg
+            assert "PARSE_ERROR" in mock_logger_error.call_args[0][0]
+            assert "Invalid timestamp format" in mock_logger_error.call_args[0][0]
     
     def test_parse_log_invalid_status_code_returns_none(self):
         """AI: Test parse_log with invalid status code - covers line 119."""
@@ -57,7 +59,7 @@ class TestProcessorsAdvanced:
     def test_parse_log_unexpected_exception_handling(self):
         """AI: Test parse_log with unexpected exception - covers lines 151-153."""
         valid_log = '2025-05-29 12:34:56,123+0000 127.0.0.1 qtp123456789-42 "GET /test HTTP/1.1" 200 1234 5678 89'
-        
+
         # Mock the regex matching to succeed but cause an exception in the processing
         # This will trigger the exception handling in the try/except block
         with patch.object(self.processor, 'regex_patterns') as mock_patterns:
@@ -67,15 +69,16 @@ class TestProcessorsAdvanced:
             mock_match.groupdict.side_effect = RuntimeError("Unexpected error")
             mock_pattern.match.return_value = mock_match
             mock_patterns.__iter__ = Mock(return_value=iter([mock_pattern]))
-            
-            with patch('builtins.print') as mock_print:
+
+            with patch('app.processors.nexus_processor.logger.error') as mock_logger_error:
                 result = self.processor.parse_log_line(valid_log, 1, "test.log")
-                
+
                 assert result is None
                 # Should print unexpected error
-                mock_print.assert_called_once()
-                assert "UNEXPECTED_ERROR" in mock_print.call_args[0][0]
-                assert "Unexpected error" in mock_print.call_args[0][0]
+                mock_logger_error.assert_called_once()
+                assert "UNEXPECTED_ERROR" in mock_logger_error.call_args[0][0]
+                # Check that the error message is in the arguments (not the format string)
+                assert "Unexpected error" in str(mock_logger_error.call_args[0][1])
     
     def test_parse_timestamp_apache_style_format(self):
         """AI: Test timestamp parsing for Apache-style format - covers lines 177-179."""
@@ -186,22 +189,23 @@ class TestNginxProcessorAdvanced:
     def test_parse_log_unexpected_exception_handling(self):
         """AI: Test parse_log with unexpected exception - covers lines 142-144."""
         valid_log = '127.0.0.1 - - [29/May/2025:00:00:09 -0400] "GET /test HTTP/1.1" 200 1234 "-" "Mozilla/5.0"'
-        
+
         # Mock the regex matching to succeed but cause an exception in the processing
         # This will trigger the exception handling in the try/except block
         with patch.object(self.processor, 'regex_pattern') as mock_pattern:
             mock_match = Mock()
             mock_match.groupdict.side_effect = RuntimeError("Unexpected error")
             mock_pattern.match.return_value = mock_match
-            
-            with patch('builtins.print') as mock_print:
+
+            with patch('app.processors.nginx_processor.logger.error') as mock_logger_error:
                 result = self.processor.parse_log_line(valid_log, 1, "test.log")
-                
+
                 assert result is None
                 # Should print unexpected error
-                mock_print.assert_called_once()
-                assert "UNEXPECTED_ERROR" in mock_print.call_args[0][0]
-                assert "Unexpected error" in mock_print.call_args[0][0]
+                mock_logger_error.assert_called_once()
+                assert "UNEXPECTED_ERROR" in mock_logger_error.call_args[0][0]
+                # Check that the error message is in the arguments (not the format string)
+                assert "Unexpected error" in str(mock_logger_error.call_args[0][1])
     
     def test_parse_request_field_json_rpc_request(self):
         """AI: Test parsing JSON-RPC style request - covers lines 179-180."""

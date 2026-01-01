@@ -29,13 +29,23 @@ class TestLogAnalysisMCPServer:
         self.mock_db_connection = Mock()
         self.mock_db_connection.db_path = "/test/mock.db"
         self.mock_db_ops.db_connection = self.mock_db_connection
-        
+
+        # Disable test mode detection to see INFO-level logger messages
+        from app.utils.logger import logger
+        self._original_is_test = logger._is_test_environment
+        logger._is_test_environment = lambda: False
+
         # Create server instance with test configuration
         self.server = LogAnalysisMCPServer(
             db_ops=self.mock_db_ops,
             host="127.0.0.1",
             port=8999
         )
+
+    def teardown_method(self):
+        """AI: Restore logger test mode detection after each test."""
+        from app.utils.logger import logger
+        logger._is_test_environment = self._original_is_test
     
     def test_server_initialization(self):
         """AI: Test MCP server initializes with correct configuration."""
@@ -81,19 +91,21 @@ class TestLogAnalysisMCPServer:
         """AI: Test starting server when already running."""
         # Simulate server already running
         self.server._running = True
-        
+
         self.server.start()
-        
+
         captured = capsys.readouterr()
-        assert "MCP server is already running" in captured.out
-    
+        # Logger outputs to stderr, not stdout
+        assert "MCP server is already running" in captured.err
+
     def test_server_stop_not_running(self, capsys):
         """AI: Test stopping server when not running."""
         self.server.stop()
-        
+
         captured = capsys.readouterr()
-        assert "MCP server is not running" in captured.out
-    
+        # Logger outputs to stderr, not stdout
+        assert "MCP server is not running" in captured.err
+
     def test_server_stop_running(self, capsys):
         """AI: Test stopping running server."""
         # Simulate server running
@@ -101,16 +113,17 @@ class TestLogAnalysisMCPServer:
         mock_thread = Mock()
         mock_thread.is_alive.return_value = True
         self.server._server_thread = mock_thread
-        
+
         self.server.stop()
-        
+
         # Verify server stopped
         assert not self.server._running
         mock_thread.join.assert_called_once_with(timeout=5)
-        
+
         captured = capsys.readouterr()
-        assert "Stopping MCP server" in captured.out
-        assert "✓ MCP server stopped" in captured.out
+        # Logger outputs to stderr, not stdout
+        assert "Stopping MCP server" in captured.err
+        assert "✓ MCP server stopped" in captured.err
     
     def test_format_json_response_valid_data(self):
         """AI: Test JSON response formatting with valid data."""

@@ -38,6 +38,7 @@ from .config import Settings, load_settings, validate_configuration
 from .database.connection import DatabaseConnection
 from .database.operations import DatabaseOperations
 from .processing import LogProcessingOrchestrator
+from .utils.logger import logger
 from .web.routes import create_web_app
 
 
@@ -160,12 +161,12 @@ def cli(
     """
     try:
         # Phase 1: Configuration Loading and Validation
-        print("=== Log Analysis Application Startup ===")
-        print("Phase 1: Loading and validating configuration...")
-        
+        logger.info("=== Log Analysis Application Startup ===")
+        logger.info("Phase 1: Loading and validating configuration...")
+
         # Validate required directories for log processing
         if process_logs and (not nexus_dir or not nginx_dir):
-            print("❌ Error: --nexus-dir and --nginx-dir are required when using --process-logs")
+            logger.error("❌ Error: --nexus-dir and --nginx-dir are required when using --process-logs")
             sys.exit(1)
         
         # For MCP-only mode, use dummy directories if not provided
@@ -191,107 +192,107 @@ def cli(
         
         # Additional configuration validation
         validate_configuration(settings)
-        print("✓ Configuration validation successful")
-        
+        logger.info("✓ Configuration validation successful")
+
         # Handle stdio mode for VS Code Copilot integration
         if mcp_stdio:
-            print("🚀 Starting MCP server in stdio mode for VS Code Copilot...")
-            
+            logger.info("🚀 Starting MCP server in stdio mode for VS Code Copilot...")
+
             # Check if database exists
             if not Path(settings.db_name).exists():
-                print(f"❌ Database not found: {settings.db_name}")
-                print("💡 Run with --process-logs first to create and populate the database")
+                logger.error("❌ Database not found: %s", settings.db_name)
+                logger.info("💡 Run with --process-logs first to create and populate the database")
                 sys.exit(1)
-            
+
             # Phase 2: Database Setup for stdio mode
-            print("📁 Setting up database connection...")
+            logger.info("📁 Setting up database connection...")
             db_connection = DatabaseConnection(settings.db_name, fresh_start=False)
             db_ops = DatabaseOperations(db_connection)
-            print(f"📁 Using database: {settings.db_name}")
-            
+            logger.info("📁 Using database: %s", settings.db_name)
+
             # Import and start stdio server
             from .mcp.server import create_stdio_server
-            print("🔌 Starting MCP server for VS Code Copilot...")
+            logger.info("🔌 Starting MCP server for VS Code Copilot...")
             stdio_server = create_stdio_server(db_ops)
             stdio_server.start()
             return  # Exit after stdio server finishes
         
         # Phase 2: Database Setup
-        print("\n\nPhase 2: Setting up database...")
+        logger.info("\n\nPhase 2: Setting up database...")
         db_connection = DatabaseConnection(settings.db_name)
         db_ops = DatabaseOperations(db_connection)
-        print("✓ Database initialized successfully")
-        
+        logger.info("✓ Database initialized successfully")
+
         # Phase 3: Application Ready State
-        print("\n\nPhase 3: Application startup complete")
-        print(f"✓ Ready to process logs from:")
-        print(f"  - Nexus: {settings.nexus_dir} (patterns: {settings.nexus_patterns})")
-        print(f"  - nginx: {settings.nginx_dir} (patterns: {settings.nginx_patterns})")
-        print(f"✓ Database: {settings.db_name}")
-        print(f"✓ Web server will start on port {settings.web_port}")
-        
+        logger.info("\n\nPhase 3: Application startup complete")
+        logger.info("✓ Ready to process logs from:")
+        logger.info("  - Nexus: %s (patterns: %s)", settings.nexus_dir, settings.nexus_patterns)
+        logger.info("  - nginx: %s (patterns: %s)", settings.nginx_dir, settings.nginx_patterns)
+        logger.info("✓ Database: %s", settings.db_name)
+        logger.info("✓ Web server will start on port %d", settings.web_port)
+
         if settings.enable_mcp_server:
-            print(f"✓ MCP server will start on port {settings.mcp_port}")
-        
+            logger.info("✓ MCP server will start on port %d", settings.mcp_port)
+
         # Phase 4: Server Startup (placeholder for future phases)
-        print("\n\n=== Phase 1 Complete: Foundation Ready ===")
-        
+        logger.info("\n\n=== Phase 1 Complete: Foundation Ready ===")
+
         # Phase 2: Log Processing (if requested)
         if process_logs:
-            print("\n\n=== Starting Phase 2: Log Processing ===")
+            logger.info("\n\n=== Starting Phase 2: Log Processing ===")
             orchestrator = LogProcessingOrchestrator(settings, db_ops)
             processing_stats = orchestrator.process_all_logs()
-            print("=== Phase 2 Complete: Log Processing Finished ===")
+            logger.info("=== Phase 2 Complete: Log Processing Finished ===")
         else:
-            print("Skipping log processing (use --process-logs to process logs)")
+            logger.info("Skipping log processing (use --process-logs to process logs)")
 
         # Check if we should exit after processing
         if settings.process_only or process_only:
-            print("\n--process-only flag specified, exiting after log processing...")
+            logger.info("\n--process-only flag specified, exiting after log processing...")
             db_ops.close()
             return
-        
+
         # Phase 3: Web Server Startup
-        print("\n\n=== Starting Phase 3: Web Interface ===")
+        logger.info("\n\n=== Starting Phase 3: Web Interface ===")
         start_web_server(settings, db_ops)
-        
+
         if settings.enable_mcp_server:
-            print("\n\n=== Starting Phase 4: MCP Server ===")
+            logger.info("\n\n=== Starting Phase 4: MCP Server ===")
             start_mcp_server(settings, db_ops)
 
-        # Keep application running for testing            
-        print(f"\n✓ Application running:")
-        print(f"  - Web interface: http://localhost:{settings.web_port}")
+        # Keep application running for testing
+        logger.info("\n✓ Application running:")
+        logger.info("  - Web interface: http://localhost:%d", settings.web_port)
         if settings.enable_mcp_server:
-            print(f"  - MCP server: http://localhost:{settings.mcp_port}")
-        print("\nPress Ctrl+C to exit...")
-        
+            logger.info("  - MCP server: http://localhost:%d", settings.mcp_port)
+        logger.info("\nPress Ctrl+C to exit...")
+
         try:
             while True:
                 time.sleep(1)
         except KeyboardInterrupt:
-            print("\nShutting down...")
+            logger.info("\nShutting down...")
             db_ops.close()
 
     except Exception as e:
-        print(f"ERROR: Application startup failed: {e}")
+        logger.error("ERROR: Application startup failed: %s", e)
         sys.exit(1)
 
 
 def start_web_server(settings: Settings, db_ops: DatabaseOperations) -> None:
     """
     AI: Start FastAPI web server with background thread.
-    
+
     Args:
         settings: Application configuration
         db_ops: Database operations instance
     """
     try:
-        print(f"Starting web server on port {settings.web_port}...")
-        
+        logger.info("Starting web server on port %d...", settings.web_port)
+
         # Create FastAPI app
         app = create_web_app(settings)
-        
+
         # Configure uvicorn
         config = uvicorn.Config(
             app=app,
@@ -300,57 +301,57 @@ def start_web_server(settings: Settings, db_ops: DatabaseOperations) -> None:
             log_level="info",
             access_log=True
         )
-        
+
         # Start server in background thread
         server = uvicorn.Server(config)
-        
+
         def run_server():
             import asyncio
             asyncio.run(server.serve())
-        
+
         server_thread = threading.Thread(target=run_server, daemon=True)
         server_thread.start()
-        
+
         # Give server time to start
         time.sleep(2)
-        print(f"✓ Web server started on http://localhost:{settings.web_port}")
-        
+        logger.info("✓ Web server started on http://localhost:%d", settings.web_port)
+
     except Exception as e:
-        print(f"ERROR: Failed to start web server: {e}")
+        logger.error("ERROR: Failed to start web server: %s", e)
         raise
 
 
 def start_mcp_server(settings: Settings, db_ops: DatabaseOperations) -> None:
     """
     AI: Start MCP server for LLM integration (Phase 4 implementation).
-    
+
     Args:
-        settings: Application configuration  
+        settings: Application configuration
         db_ops: Database operations instance
     """
     try:
-        print(f"Starting MCP server on port {settings.mcp_port}...")
-        
+        logger.info("Starting MCP server on port %d...", settings.mcp_port)
+
         # Import MCP server (avoiding circular imports)
         from .mcp.server import create_network_server
-        
+
         # Create and start MCP server in network mode
         mcp_server = create_network_server(
             db_ops=db_ops,
             host="0.0.0.0",
             port=settings.mcp_port
         )
-        
+
         mcp_server.start()
-        
+
         # Store server reference for cleanup (in real implementation)
         # This would be managed by the application lifecycle
         settings._mcp_server = mcp_server
-        
-        print(f"✓ MCP server started with tools: {mcp_server.get_status()['tools']}")
-        
+
+        logger.info("✓ MCP server started with tools: %s", mcp_server.get_status()['tools'])
+
     except Exception as e:
-        print(f"ERROR: Failed to start MCP server: {e}")
+        logger.error("ERROR: Failed to start MCP server: %s", e)
         raise
 
 

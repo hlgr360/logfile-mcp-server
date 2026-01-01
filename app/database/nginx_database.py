@@ -10,6 +10,7 @@ from datetime import datetime
 
 from app.database.base import BaseLogDatabase
 from app.database.models import NginxLog
+from ..utils.logger import logger
 
 
 class NginxLogDatabase(BaseLogDatabase):
@@ -54,7 +55,7 @@ class NginxLogDatabase(BaseLogDatabase):
                         )
                         nginx_logs.append(nginx_log)
                     except Exception as e:
-                        print(f"NGINX_INSERT_ERROR: Skipping invalid entry - {e}")
+                        logger.error("NGINX_INSERT_ERROR: Skipping invalid entry - %s", e)
                         continue
                 
                 if nginx_logs:
@@ -65,7 +66,7 @@ class NginxLogDatabase(BaseLogDatabase):
                     return 0
                     
         except Exception as e:
-            print(f"NGINX_BATCH_INSERT_ERROR: Failed to insert nginx logs - {e}")
+            logger.error("NGINX_BATCH_INSERT_ERROR: Failed to insert nginx logs - %s", e)
             raise
     
     def get_preview(self, limit: int = 10) -> List[Dict]:
@@ -103,7 +104,7 @@ class NginxLogDatabase(BaseLogDatabase):
                 return result
                 
         except Exception as e:
-            print(f"NGINX_PREVIEW_ERROR: Failed to get nginx preview - {e}")
+            logger.error("NGINX_PREVIEW_ERROR: Failed to get nginx preview - %s", e)
             return []
     
     def get_top_paths(self, limit: int = 10) -> List[Dict[str, Any]]:
@@ -120,7 +121,7 @@ class NginxLogDatabase(BaseLogDatabase):
                 result = session.execute(query, {'limit': limit})
                 return [{'path': row[0], 'hits': row[1]} for row in result.fetchall()]
         except Exception as e:
-            print(f"NGINX_TOP_PATHS_ERROR: Failed to get top paths - {e}")
+            logger.error("NGINX_TOP_PATHS_ERROR: Failed to get top paths - %s", e)
             return []
     
     def get_status_code_distribution(self) -> List[Dict[str, Any]]:
@@ -136,7 +137,7 @@ class NginxLogDatabase(BaseLogDatabase):
                 result = session.execute(query)
                 return [{'status_code': row[0], 'count': row[1]} for row in result.fetchall()]
         except Exception as e:
-            print(f"NGINX_STATUS_DIST_ERROR: Failed to get status distribution - {e}")
+            logger.error("NGINX_STATUS_DIST_ERROR: Failed to get status distribution - %s", e)
             return []
     
     def get_logs_by_timerange(
@@ -167,5 +168,5 @@ class NginxLogDatabase(BaseLogDatabase):
                 return result
                 
         except Exception as e:
-            print(f"NGINX_TIMERANGE_ERROR: Failed to get logs by timerange - {e}")
+            logger.error("NGINX_TIMERANGE_ERROR: Failed to get logs by timerange - %s", e)
             return []
