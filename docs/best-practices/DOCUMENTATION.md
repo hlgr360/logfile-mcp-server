@@ -386,6 +386,63 @@ Is this documentation specific to this project?
 
 ---
 
+### Subdirectory READMEs
+
+**Purpose**: Make directories self-documenting and discoverable
+
+**When to add subdirectory READMEs**:
+- ✅ **Directory contains multiple files** that need explanation
+- ✅ **Non-obvious purpose** - Directory name doesn't fully explain contents
+- ✅ **Examples or templates** - Users need guidance on how to use them
+- ✅ **Collection of scripts/tools** - Need to index what's available
+- ✅ **GitHub browsing** - Directory will be viewed on GitHub web interface
+
+**When to skip**:
+- ❌ **Build artifacts** - `dist/`, `build/`, `coverage/`
+- ❌ **Single file** - No need to document one file
+- ❌ **Self-explanatory** - `src/`, `node_modules/`, `.git/`
+- ❌ **Covered elsewhere** - Main README fully explains it
+
+**Benefits**:
+1. **GitHub auto-rendering** - README.md displays automatically when browsing directories
+2. **Discoverability** - Users jumping directly to subdirectory get immediate context
+3. **Co-location** - Documentation lives with what it describes
+4. **Index function** - Lists and explains all files in the directory
+5. **Link targets** - Can link to `subdirectory/README.md` instead of vague references
+6. **Reduced navigation** - No need to jump to parent docs for context
+
+**Template**:
+```markdown
+# [Directory Name]
+
+Brief 1-2 sentence description of this directory's purpose.
+
+## Contents
+
+- **file1.ext** - What it does and when to use it
+- **file2.ext** - What it does and when to use it
+
+## Usage
+
+How to use files in this directory (with examples if applicable).
+
+## Related Documentation
+
+- [Parent documentation](../README.md)
+- [Related guide](../docs/GUIDE.md)
+```
+
+**Examples from well-maintained projects**:
+- `examples/README.md` - Explains configuration examples and setup steps
+- `scripts/README.md` - Indexes all available scripts with descriptions
+- `tests/fixtures/README.md` - Explains fixture-based testing strategy
+- `docs/adr/README.md` - Indexes ADRs with status and quick navigation
+- `docs/best-practices/README.md` - Overview of universal standards
+
+**Core principle**: Documentation should be discoverable at the point of use. When someone navigates to a directory, they should immediately understand what it contains and how to use it without searching elsewhere.
+
+---
+
 ### CONTRIBUTING.md
 
 **Purpose**: Onboarding guide for contributors
