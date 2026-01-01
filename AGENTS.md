@@ -1107,3 +1107,71 @@ Ask questions like:
 - "Show me the nginx log table structure"
 - "What are the most common HTTP methods?"
 - "Find all 404 errors"
+
+---
+
+## Contributing
+
+**ALL code changes MUST go through pull requests. No direct commits to `main`.**
+
+For complete contribution guidelines, see **[CONTRIBUTING.md](./CONTRIBUTING.md)**.
+
+### Quick Start for Contributors
+
+1. **Read the documentation**:
+   - This AGENTS.md file (you're reading it)
+   - [CONTRIBUTING.md](./CONTRIBUTING.md) for PR workflow and conventions
+   - [docs/best-practices/PULL_REQUESTS.md](./docs/best-practices/PULL_REQUESTS.md) for detailed PR process
+   - Project-specific best practices in `docs/best-practices/`
+
+2. **Create a feature branch**:
+   ```bash
+   git checkout -b feature/your-feature-name
+   # OR
+   git checkout -b fix/bug-description
+   ```
+
+3. **Make your changes**:
+   - Follow conventions in [CONTRIBUTING.md](./CONTRIBUTING.md)
+   - Use `logger.*()` for all output (never `print()`)
+   - Add type hints to all functions
+   - Write comprehensive tests
+
+4. **Test thoroughly**:
+   ```bash
+   uv run pytest                    # All 330 tests must pass
+   uv run pytest --cov=app          # Check coverage (>85% target)
+   ```
+
+5. **Create a pull request**:
+   ```bash
+   git push origin feature/your-feature-name
+   gh pr create --title "feat: Your feature" --body "..."
+   ```
+
+### For AI Agents
+
+**CRITICAL**: When implementing features or fixes:
+
+1. **Always use EnterPlanMode** for non-trivial changes before writing code
+2. **Always create feature branch** - NEVER commit directly to main
+3. **Always create PR** - NEVER push directly to main
+4. **Always use logger** - NEVER use `print()` (corrupts MCP stdio protocol)
+5. **Always review documentation** - Update AGENTS.md, SPEC.md, README.md as needed
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for complete AI agent guidelines.
+
+### Definition of Done
+
+Before marking work complete, verify:
+
+- [ ] All 330 tests pass
+- [ ] Coverage meets target (>85% for new code)
+- [ ] No `print()` statements in production code
+- [ ] Logger outputs to stderr only
+- [ ] Type hints on all new functions
+- [ ] Documentation updated (AGENTS.md, SPEC.md, README.md, CHANGELOG.md)
+- [ ] PR created and ready for review
+- [ ] All commits follow conventional commit format
+
+**See [CONTRIBUTING.md](./CONTRIBUTING.md) for complete Definition of Done checklist.**
