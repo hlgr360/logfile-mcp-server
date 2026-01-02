@@ -1,65 +1,29 @@
-# Log Analysis Application
+# Logfile MCP Server
 
-A Python FastAPI application for loading, parsing, correlating, and analyzing access logs from Nexus Repository and nginx reverse proxy.
+A powerful Python application for analyzing access logs from Nexus Repository and nginx reverse proxy. Provides both a web interface for interactive querying and an MCP (Model Context Protocol) server for AI-powered log analysis via VS Code Copilot and other LLM tools.
 
-## Phase 1: Foundation Complete ✅
-
-This implementation provides the foundation for the log analysis application:
-
-- ✅ Complete project structure per specification
-- ✅ Configuration management with CLI and environment support
-- ✅ Database models and connection management
-- ✅ Basic unit tests for configuration validation
-- ✅ Fresh database creation on each startup
-
-## Phase 2: Core Processing Complete ✅
-
-The log processing engine is now fully implemented:
-
-- ✅ Memory-efficient log processing with chunked reading
-- ✅ Abstract BaseLogProcessor with concrete nginx/Nexus implementations
-- ✅ File discovery system with archive support (.tar, .zip, nested)
-- ✅ Processing orchestration with statistics and error handling
-- ✅ Comprehensive test coverage (54/54 tests passing)
-- ✅ End-to-end workflow validation with demo script
-
-## Phase 3: Web Interface Complete ✅
-
-Full-featured web interface with comprehensive testing:
-
-- ✅ FastAPI web application with responsive HTML/CSS interface
-- ✅ Table previews for nginx and nexus logs with sample data display
-- ✅ SQL query interface with custom query execution and pre-built examples
-- ✅ Error handling with user-friendly error messages and security validation
-- ✅ Health check endpoints for system monitoring
-- ✅ Comprehensive Playwright E2E testing (13/13 tests passing)
-- ✅ Real nginx log format support (GitLab runner logs)
-- ✅ Apache-style log format standardization
+---
 
 ## Features
 
-- Parse nginx and Nexus access logs from various archive formats
-- Store parsed data in SQLite database with optimized indexing
-- **Web interface for data viewing and SQL querying** ✅ **Complete**
-- **MCP server for LLM integration (VS Code Copilot)** ✅ **Complete**
-- Interactive table previews with sample data
-- Custom SQL query execution with result display
-- Pre-built example queries for common analysis tasks
-- VS Code Copilot integration with database querying capabilities
-- Support for configurable file patterns and nested archive processing
+- ✅ **Parse Multiple Log Formats**: nginx and Nexus Repository access logs with flexible pattern matching
+- ✅ **Archive Support**: Automatically extract and process logs from tar, tar.gz, zip, and nested archives
+- ✅ **SQLite Database**: Fast, indexed storage for efficient querying of millions of log entries
+- ✅ **Web Interface**: Interactive table previews and custom SQL query execution
+- ✅ **AI Integration**: MCP server for VS Code Copilot - ask questions about your logs in natural language
+- ✅ **Memory Efficient**: Stream-based processing handles multi-GB log files without loading into memory
+- ✅ **Comprehensive Testing**: 330 tests (88% coverage) ensure reliability
 
-## Documentation
+---
 
-- **[Technical Specification](docs/SPEC.md)** - Comprehensive architecture and implementation details
-- **[Architectural Decision Records](docs/adr/)** - Design decisions and rationale
-
-## Installation
+## Quick Start
 
 ### Prerequisites
+
 Install [uv](https://docs.astral.sh/uv/) for fast Python package management:
 
 ```bash
-# Install uv (macOS/Linux)
+# macOS/Linux
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Or with pip
@@ -69,119 +33,117 @@ pip install uv
 brew install uv
 ```
 
-### Setup
+### Installation
 
 ```bash
+# Clone repository
+git clone https://github.com/yourusername/logfile-mcp-server.git
+cd logfile-mcp-server
+
 # Create virtual environment and install dependencies
-uv venv
-uv pip install -e .
-
-# Install development dependencies
-uv pip install -e ".[dev]"
-
-# Or install everything at once
-uv pip install -e ".[dev]"
+uv sync
 ```
+
+### Demo Setup
+
+```bash
+# 1. Create demo database with sample data
+uv run python scripts/create_demo_db.py
+
+# 2. Start web interface
+uv run python -m app.main --db-name demo.db
+
+# 3. Open browser to http://localhost:8000
+```
+
+---
 
 ## Usage
 
-### Quick Start with VS Code Copilot Integration
+### Basic Log Processing
+
+Process logs from directories and start the web interface:
 
 ```bash
-# 1. Create demo database using shared test factory
-uv run python scripts/create_demo_db.py
-
-# 2. VS Code Copilot will automatically connect using .vscode/mcp.json
-# 3. Ask Copilot questions about your log data:
-#    - "Show me the nginx log table structure"
-#    - "What are the most common HTTP methods?"
-#    - "Find all 404 errors"
+uv run python -m app.main \
+  --nexus-dir /path/to/nexus/logs \
+  --nginx-dir /path/to/nginx/logs \
+  --process-logs
 ```
 
-### Quick Start with Sample Data
+The application will:
+1. Discover all log files (including archives)
+2. Parse log entries
+3. Store in SQLite database (`log_analysis.db`)
+4. Start web server on http://localhost:8000
 
-```bash
-# Create demo database with sample data and start web interface
-uv run python scripts/create_demo_db.py
+### Web Interface
 
-# Start the web application with demo data
-uv run python -m app.main --nexus-dir ./sample_logs/nexus --nginx-dir ./sample_logs/nginx --db-name demo.db
+Access the web interface at `http://localhost:8000` to:
+- View table previews (latest 10 entries from each log type)
+- Execute custom SQL queries
+- Explore sample queries for common analysis tasks
+- View query results in formatted tables
 
-# Access the web interface at http://localhost:8000
+**Example queries**:
+```sql
+-- Most common HTTP methods
+SELECT method, COUNT(*) as count
+FROM nginx_logs
+GROUP BY method
+ORDER BY count DESC;
+
+-- Error responses in last day
+SELECT * FROM nginx_logs
+WHERE status_code >= 400
+  AND timestamp >= datetime('now', '-1 day');
+
+-- Top 10 most accessed paths
+SELECT path, COUNT(*) as hits
+FROM nginx_logs
+GROUP BY path
+ORDER BY hits DESC
+LIMIT 10;
 ```
 
-### Basic Usage
+### AI-Powered Analysis with VS Code Copilot
 
+The MCP server lets you analyze logs using natural language through VS Code Copilot:
+
+**Setup**:
 ```bash
-# Process logs from directories and start web interface
-uv run python -m app.main --nexus-dir /path/to/nexus/logs --nginx-dir /path/to/nginx/logs --process-logs
-
-# Or activate environment first
-source .venv/bin/activate  # Linux/macOS
-python -m app.main --nexus-dir /path/to/nexus/logs --nginx-dir /path/to/nginx/logs --process-logs
-```
-
-### Full Configuration
-
-```bash
-uv run python -m app.main \\
-  --nexus-dir /path/to/nexus/logs \\
-  --nginx-dir /path/to/nginx/logs \\
-  --process-logs \\
-  --db-name analysis.db \\
-  --nexus-pattern "request.log*,nexus_logs_*.tar,nexus_logs_*.tar.gz" \\
-  --nginx-pattern "access.log*" \\
-  --enable-mcp-server \\
-  --mcp-port 8001 \\
-  --web-port 8000 \\
-  --max-archive-depth 3
-```
-
-### MCP Server Integration
-
-The application includes a comprehensive **Model Context Protocol (MCP)** server for LLM integration:
-
-#### VS Code Copilot Integration
-
-Connect VS Code Copilot to your log analysis database:
-
-```bash
-# Start MCP server for VS Code Copilot (stdio mode)
+# Start MCP server in stdio mode
 uv run python -m app.main --db-name log_analysis.db --mcp-stdio
 ```
 
-VS Code configuration is automatically set up in `.vscode/mcp.json`. Once connected, you can ask Copilot:
+VS Code Copilot is automatically configured via `.vscode/mcp.json`.
 
+**Example questions** you can ask Copilot:
 - *"Show me the nginx log table structure"*
-- *"What are the most common HTTP methods in the logs?"* 
+- *"What are the most common HTTP methods in my logs?"*
 - *"Find all 404 errors from the last day"*
 - *"Show me sample nexus log entries"*
+- *"Which paths have the most traffic?"*
 
-#### Network MCP Server
-
-For other MCP clients, use network mode:
+### Advanced Configuration
 
 ```bash
-# Start with web interface AND MCP server
-uv run python -m app.main --nexus-dir /logs/nexus --nginx-dir /logs/nginx --enable-mcp-server --mcp-port 8001
+uv run python -m app.main \
+  --nexus-dir /path/to/nexus/logs \
+  --nginx-dir /path/to/nginx/logs \
+  --process-logs \
+  --db-name analysis.db \
+  --nexus-pattern "request.log*,nexus_logs_*.tar,nexus_logs_*.tar.gz" \
+  --nginx-pattern "access.log*" \
+  --enable-mcp-server \
+  --mcp-port 8001 \
+  --web-port 8000 \
+  --max-archive-depth 3
 ```
-
-#### Available MCP Tools
-
-1. **`list_database_schema`** - Inspect database structure and relationships
-2. **`execute_sql_query`** - Run secure SELECT queries with result limits
-3. **`get_table_sample`** - Preview table data with configurable row limits
-
-#### MCP Security Features
-
-- Only SELECT statements allowed (no data modification)
-- Query result limits to prevent memory issues
-- Input validation and sanitization
-- Comprehensive error handling and logging
 
 ### Environment Configuration
 
-Create a `.env` file:
+Create a `.env` file for persistent configuration:
 
 ```env
 NEXUS_DIR=/path/to/nexus/logs
@@ -195,141 +157,9 @@ WEB_PORT=8000
 MAX_ARCHIVE_DEPTH=3
 ```
 
-## Testing
+See [.env.example](./.env.example) for all available options.
 
-### Comprehensive Test Suite
-
-The application includes multiple layers of testing:
-
-#### Unit Tests
-```bash
-# Run all unit tests
-uv run pytest tests/unit/ -v
-
-# Run specific processor tests
-uv run pytest tests/unit/test_nginx_processor.py -v
-uv run pytest tests/unit/test_nexus_processor.py -v
-uv run pytest tests/unit/test_database_operations.py -v
-```
-
-#### Integration Tests
-```bash
-# Run integration tests
-uv run pytest tests/integration/ -v
-
-# Run web interface integration tests
-uv run pytest tests/integration/test_web_interface_integration.py -v
-
-# Run MCP server integration tests
-uv run pytest tests/integration/test_mcp_integration.py -v
-```
-
-#### End-to-End (E2E) Tests with Playwright
-```bash
-# Run comprehensive E2E tests (recommended)
-./run_playwright_e2e.sh
-
-# Or run Playwright tests directly
-uv run pytest tests/playwright/test_web_interface.py -v
-
-# Run E2E tests with browser visible (for debugging)
-uv run pytest tests/playwright/test_web_interface.py -v --headed
-```
-
-#### Complete Test Suite
-```bash
-# Run all tests with coverage
-uv run pytest --cov=app --cov-report=html --cov-report=term
-
-# Run all tests in parallel (faster)
-uv run pytest -n auto
-
-# Run tests by category
-uv run pytest -m "not e2e"        # Skip E2E tests for faster runs
-uv run pytest -m "unit"           # Unit tests only  
-uv run pytest -m "integration"    # Integration tests only
-uv run pytest -m "e2e"            # E2E tests only
-
-# Alternative: activate environment first
-source .venv/bin/activate  # Linux/macOS
-pytest --cov=app --cov-report=html
-```
-
-#### Test Coverage Reporting
-```bash
-# Generate HTML coverage report
-uv run pytest --cov=app --cov-report=html
-# View report: open htmlcov/index.html
-
-# Generate terminal coverage report
-uv run pytest --cov=app --cov-report=term-missing
-```
-
-### Test Categories Explained
-
-- **Unit Tests**: Test individual components in isolation (processors, database operations)
-- **Integration Tests**: Test component interactions and workflows
-- **E2E Tests**: Test complete user workflows through the web interface using real browsers
-- **Playwright Tests**: Comprehensive browser automation testing (13 test scenarios)
-
-## Development Phases
-
-### ✅ Phase 1: Foundation (`feature/project-setup`)
-- Project structure and dependencies
-- Configuration management with validation
-- Database models and connection setup
-- Basic unit tests
-
-### ✅ Phase 2: Core Processing (`feature/phase2-log-processing`)
-- Memory-efficient log processing architecture
-- File discovery and pattern matching with archive support
-- nginx and Nexus log format parsing with regex patterns
-- Processing orchestration with statistics tracking
-- Comprehensive unit and integration tests (54/54 passing)
-
-### ✅ Phase 3: Web Interface (`feature/web-interface`)
-- FastAPI application with HTML templates
-- Table preview endpoints
-- SQL query interface with security
-- Results display and error handling
-
-### ✅ Phase 4: MCP Integration (`feature/mcp-server`)
-- Integrated MCP server with dual transport support (stdio + network)
-- VS Code Copilot integration via stdio transport
-- Database schema inspection tools
-- LLM integration with secure query endpoints
-- Comprehensive MCP tool testing and validation
-
-### ⏳ Phase 5: Testing & Polish (`feature/comprehensive-tests`)
-- Full test coverage
-- Playwright E2E tests
-- Performance optimizations
-- Documentation completion
-
-## Architecture
-
-**For complete architecture details, see [Technical Specification](docs/SPEC.md)**
-
-```
-app/
-├── __init__.py
-├── main.py                    # CLI entry point and application startup
-├── config.py                  # Configuration management (.env support)
-├── database/
-│   ├── __init__.py
-│   ├── connection.py          # SQLite connection management
-│   ├── models.py              # SQLAlchemy models (NginxLog, NexusLog)
-│   └── operations.py          # Database CRUD operations
-├── processors/               # Log parsing (Phase 2)
-├── web/                     # FastAPI web interface (Phase 3)
-├── mcp/                     # MCP server for LLM integration (Phase 4) ✅
-│   ├── __init__.py
-│   ├── server.py            # Integrated MCP server with dual transport
-│   └── tools.py             # MCP tool implementations
-├── static/                  # Web assets (Phase 3)
-└── scripts/                 # Utility scripts for setup and development
-    └── create_demo_db.py    # Demo database creation using shared factory
-```
+---
 
 ## Configuration Options
 
@@ -349,56 +179,200 @@ app/
 
 *Required only when using `--process-logs`
 
-## Troubleshooting
+---
 
-### Common Issues
-
-1. **No data displayed in web interface**: Run data processing first with `--process-logs`
-2. **VS Code Copilot not connecting**: Ensure database exists and check `.vscode/mcp.json` configuration
-3. **MCP tool errors**: Verify database path and ensure SELECT-only queries are being used
-4. **Test failures**: Ensure web server is not running during tests
-5. **Port conflicts**: Change ports in configuration if 8000/8001 are in use
-6. **Missing dependencies**: Reinstall with `uv sync --dev`
-7. **Database issues**: Delete `log_analysis.db` to reset and reprocess logs
-8. **Archive processing**: Ensure tar/gzip files are properly formatted and readable
-
-### Development Notes
-
-- Web interface uses FastAPI with automatic OpenAPI documentation
-- Database uses SQLite with SQLAlchemy ORM
-- MCP server supports both stdio (VS Code) and network transports
-- MCP tools provide secure database access with SELECT-only queries
-- E2E testing requires Playwright browser automation
-- Log processing supports nested archives with depth limits
-- Comprehensive error handling and logging throughout application
-- Single entry point eliminates duplicate server implementations
-
-## Log Formats Supported
+## Supported Log Formats
 
 ### nginx Access Logs
 ```
 IP - user - [timestamp] "method path HTTP/version" status size "referer" "user-agent"
 ```
 
-### Nexus Access Logs  
+**Example**:
 ```
-IP - user - [timestamp] "method path HTTP/version" status - size1 size2 "user-agent" [thread-info]
+116.202.29.193 - - [29/May/2025:00:00:09 -0400] "POST /api/v4/jobs/request HTTP/1.1" 204 0 "-" "gitlab-runner 17.10.1"
 ```
 
-## Archive Formats Supported
+### Nexus Repository Logs
+```
+IP - user - [timestamp] "method path HTTP/version" status - size1 size2 time "user-agent" [thread-info]
+```
 
-- Single compressed files: `*.gz`
-- Tar archives: `*.tar`, `*.tar.gz`  
-- Zip archives: `*.zip`
-- Nested archives up to configurable depth
+**Example**:
+```
+10.1.6.4 - - [12/Jun/2025:06:06:02 +0000] "GET / HTTP/1.0" 200 - 7927 93 "Mozilla/5.0" [qtp1399093517-103]
+```
+
+---
+
+## Archive Support
+
+Automatically extracts and processes logs from:
+- **Compressed files**: `*.gz`
+- **Tar archives**: `*.tar`, `*.tar.gz`, `*.tar.bz2`
+- **Zip archives**: `*.zip`
+- **Nested archives**: Up to 3 levels deep (e.g., `backup.zip` → `daily.tar.gz` → `access.log`)
+
+---
+
+## MCP Server Integration
+
+### Available MCP Tools
+
+The MCP server provides three tools for AI-powered log analysis:
+
+1. **`list_database_schema`** - Inspect database structure and relationships
+2. **`execute_sql_query`** - Run secure SELECT queries with result limits
+3. **`get_table_sample`** - Preview table data with configurable row limits
+
+### Security Features
+
+- ✅ Only SELECT statements allowed (no data modification)
+- ✅ Query result limits to prevent memory issues
+- ✅ Input validation and sanitization
+- ✅ Comprehensive error handling and logging
+
+### Network MCP Server
+
+For other MCP clients (not VS Code Copilot), use network mode:
+
+```bash
+uv run python -m app.main \
+  --nexus-dir /logs/nexus \
+  --nginx-dir /logs/nginx \
+  --enable-mcp-server \
+  --mcp-port 8001
+```
+
+---
+
+## Testing
+
+### Run All Tests
+
+```bash
+# All 330 tests (281 unit, 28 integration, 8 E2E, 13 Playwright)
+uv run pytest
+
+# With coverage report
+uv run pytest --cov=app --cov-report=html --cov-report=term
+
+# Run in parallel (faster)
+uv run pytest -n auto
+```
+
+### Run Specific Test Types
+
+```bash
+# Unit tests only (fast)
+uv run pytest tests/unit/ -v
+
+# Integration tests
+uv run pytest tests/integration/ -v
+
+# E2E tests with Playwright
+./run_playwright_e2e.sh
+
+# Or run Playwright tests directly
+uv run pytest tests/playwright/test_web_interface.py -v
+
+# With browser visible (debugging)
+uv run pytest tests/playwright/test_web_interface.py -v --headed
+```
+
+### Test Coverage
+
+View HTML coverage report:
+```bash
+uv run pytest --cov=app --cov-report=html
+# Open htmlcov/index.html in browser
+```
+
+---
+
+## Troubleshooting
+
+### Common Issues
+
+**No data displayed in web interface**
+- Run data processing first with `--process-logs`
+- Verify database file exists: `ls -lh log_analysis.db`
+
+**VS Code Copilot not connecting**
+- Ensure database exists: `uv run python scripts/create_demo_db.py`
+- Check `.vscode/mcp.json` configuration
+- Verify MCP server starts without errors
+
+**MCP tool errors**
+- Verify database path is correct
+- Ensure only SELECT queries are being used
+- Check MCP server logs for specific errors
+
+**Test failures**
+- Ensure web server is not running during tests
+- Delete `log_analysis.db` and rerun tests
+- Check for port conflicts (8000/8001 in use)
+
+**Port conflicts**
+- Change ports in configuration: `--web-port 8080 --mcp-port 8002`
+- Check which process is using the port: `lsof -i :8000`
+
+**Missing dependencies**
+- Reinstall with `uv sync --dev`
+- Verify uv is up to date: `uv --version`
+
+**Database issues**
+- Delete database to start fresh: `rm log_analysis.db`
+- Reprocess logs with `--process-logs`
+
+**Archive processing errors**
+- Ensure tar/gzip files are properly formatted
+- Check file permissions are readable
+- Reduce `--max-archive-depth` if extraction is too slow
+
+---
+
+## Documentation
+
+- **[Technical Specification](docs/SPEC.md)** - Complete architecture and implementation details
+- **[Developer Guide](AGENTS.md)** - For contributors and AI coding assistants
+- **[Contributing Guidelines](CONTRIBUTING.md)** - How to contribute to this project
+- **[Architectural Decisions](docs/adr/)** - Design decisions and rationale
+- **[Best Practices](docs/best-practices/)** - Universal development standards
+
+---
 
 ## Contributing
 
-1. Create feature branch: `git checkout -b feature/your-feature`
-2. Make changes following coding guidelines
-3. Add comprehensive tests
-4. Submit pull request for review
+We welcome contributions from both human developers and AI coding assistants!
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for complete guidelines.
+
+**Quick summary**:
+- ✅ **All changes MUST go through pull requests** (no direct commits to main)
+- ✅ Follow [Python Best Practices](docs/best-practices/PYTHON.md)
+- ✅ Ensure all 330 tests pass before creating PR
+- ✅ Use `logger.*()` for all output (never `print()` - corrupts MCP stdio protocol)
+- ✅ Add type hints to all functions
+- ✅ Write comprehensive tests (>85% coverage for new code)
+- ✅ Update documentation (AGENTS.md, SPEC.md, CHANGELOG.md)
+
+**For AI Agents**:
+- Read [AGENTS.md](./AGENTS.md) thoroughly before contributing
+- Use EnterPlanMode for non-trivial changes
+- Always create feature branch
+- Never commit directly to main
+
+---
 
 ## License
 
-MIT License - see LICENSE file for details.
+MIT License - see [LICENSE](./LICENSE) file for details.
+
+---
+
+## Support
+
+- **Issues**: [GitHub Issues](https://github.com/yourusername/logfile-mcp-server/issues)
+- **Documentation**: [docs/](./docs/)
+- **Developer Guide**: [AGENTS.md](./AGENTS.md)
