@@ -109,7 +109,7 @@ class BaseLogProcessor(ABC):
                         line = f.readline()
                         if not line:  # EOF
                             break
-                        chunk_lines.append(line.rstrip('\\n\\r'))
+                        chunk_lines.append(line.rstrip('\n\r'))
                     
                     if not chunk_lines:
                         break
@@ -137,7 +137,7 @@ class BaseLogProcessor(ABC):
                     yield batch
                     
         except Exception as e:
-            logger.error("ERROR: Failed to process file {file_path}: {e}")
+            logger.error(f"ERROR: Failed to process file {file_path}: {e}")
             self.error_count += 1
     
     def process_file_content(self, file_obj: TextIO, source_name: str) -> Iterator[List[Dict]]:
@@ -160,7 +160,7 @@ class BaseLogProcessor(ABC):
             # Read in chunks of lines
             for line in file_obj:
                 line_number += 1
-                line = line.rstrip('\\n\\r')
+                line = line.rstrip('\n\r')
                 
                 if not line.strip():  # Skip empty lines
                     continue
@@ -198,7 +198,7 @@ class BaseLogProcessor(ABC):
                 yield batch
                 
         except Exception as e:
-            logger.error("ERROR: Failed to process file content from {source_name}: {e}")
+            logger.error(f"ERROR: Failed to process file content from {source_name}: {e}")
             self.error_count += 1
     
     def process_file_to_database(self, file_handle, source_description: str, db_ops: DatabaseOperations) -> Dict:
@@ -310,7 +310,7 @@ class BaseLogProcessor(ABC):
         try:
             return int(status_str)
         except ValueError:
-            logger.error("PARSE_ERROR: %s:%d - Invalid status code: {status_str}", source_file, line_number)
+            logger.error("PARSE_ERROR: %s:%d - Invalid status code: %s", source_file, line_number, status_str)
             return None
 
     def _clean_optional_field(self, field_value: str, default_marker: str = '-') -> Optional[str]:
